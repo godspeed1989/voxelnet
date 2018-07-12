@@ -15,8 +15,12 @@ from model import RPN3D
 from utils import *
 from utils.kitti_loader import iterate_data, sample_test_data
 from train_hook import check_if_should_pause
+from termcolor import cprint
 
-
+log_f = None
+def log_print(s):
+    cprint(s, 'green', attrs=['bold'])
+    log_f.write(s + '\n')
 
 
 parser = argparse.ArgumentParser(description='training')
@@ -49,6 +53,9 @@ os.makedirs(save_model_dir, exist_ok=True)
 
 
 def main(_):
+    global log_f
+    timestr = time.strftime("%b-%d_%H-%M-%S", time.localtime())
+    log_f = open('log/train_{}.txt'.format(timestr), 'w')
     # TODO: split file support
     with tf.Graph().as_default():
         global save_model_dir
@@ -77,13 +84,13 @@ def main(_):
             )
             # param init/restore
             if tf.train.get_checkpoint_state(save_model_dir):
-                print("Reading model parameters from %s" % save_model_dir)
+                log_print("Reading model parameters from %s" % save_model_dir)
                 model.saver.restore(
                     sess, tf.train.latest_checkpoint(save_model_dir))
                 start_epoch = model.epoch.eval() + 1
                 global_counter = model.global_step.eval() + 1
             else:
-                print("Created model with fresh parameters.")
+                log_print("Created model with fresh parameters.")
                 tf.global_variables_initializer().run()
 
             # train and validate
@@ -93,6 +100,8 @@ def main(_):
             summary_val_interval = 10
             summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
 
+            parameter_num = np.sum([np.prod(v.shape.as_list()) for v in tf.trainable_variables()])
+            log_print('Parameter number: {}'.format(parameter_num))
 
             # training
             for epoch in range(start_epoch, args.max_epoch):
@@ -114,18 +123,16 @@ def main(_):
                     batch_time = time.time() - batch_time
 
                     
-                    print('train: {} @ epoch:{}/{} loss: {:.4f} reg_loss: {:.4f} cls_loss: {:.4f} cls_pos_loss: {:.4f} cls_neg_loss: {:.4f} forward time: {:.4f} batch time: {:.4f}'.format(counter,epoch, args.max_epoch, ret[0], ret[1], ret[2], ret[3], ret[4], forward_time, batch_time))
-                    with open('log/train.txt', 'a') as f:
-                        f.write( 'train: {} @ epoch:{}/{} loss: {:.4f} reg_loss: {:.4f} cls_loss: {:.4f} cls_pos_loss: {:.4f} cls_neg_loss: {:.4f} forward time: {:.4f} batch time: {:.4f} \n'.format(counter, epoch, args.max_epoch, ret[0], ret[1], ret[2], ret[3], ret[4], forward_time, batch_time) )
+                    log_print('train: {} @ epoch:{}/{} loss: {:.4f} reg_loss: {:.4f} cls_loss: {:.4f} cls_pos_loss: {:.4f} cls_neg_loss: {:.4f} forward time: {:.4f} batch time: {:.4f}'.format(counter,epoch, args.max_epoch, ret[0], ret[1], ret[2], ret[3], ret[4], forward_time, batch_time))
                     
                     #print(counter, summary_interval, counter % summary_interval)
                     if counter % summary_interval == 0:
-                        print("summary_interval now")
+                        log_print("summary_interval now")
                         summary_writer.add_summary(ret[-1], global_counter)
                             
                     #print(counter, summary_val_interval, counter % summary_val_interval)
                     if counter % summary_val_interval == 0:
-                        print("summary_val_interval now")
+                        log_print("summary_val_interval now")
                         batch = sample_test_data(val_dir, args.single_batch_size * cfg.GPU_USE_COUNT, multi_gpu_sum=cfg.GPU_USE_COUNT)
                         
                         ret = model.validate_step(sess, batch, summary=True)
@@ -135,11 +142,11 @@ def main(_):
                             ret = model.predict_step(sess, batch, summary=True)
                             summary_writer.add_summary(ret[-1], global_counter)
                         except:
-                            print("prediction skipped due to error")
+                            log_print("prediction skipped due to error")
                     
                     if check_if_should_pause(args.tag):
                         model.saver.save(sess, os.path.join(save_model_dir, 'checkpoint'), global_step=model.global_step)
-                        print('pause and save model @ {} steps:{}'.format(save_model_dir, model.global_step.eval()))
+                        log_print('pause and save model @ {} steps:{}'.format(save_model_dir, model.global_step.eval()))
                         sys.exit(0)
                             
                     batch_time = time.time()
@@ -169,7 +176,7 @@ def main(_):
                                 labels = box3d_to_label([result[:, 1:8]], [result[:, 0]], [result[:, -1]], coordinate='lidar')[0]
                                 for line in labels:
                                     f.write(line)
-                                print('write out {} objects to {}'.format(len(labels), tag))
+                                log_print('write out {} objects to {}'.format(len(labels), tag))
                         # dump visualizations
                         if args.vis:
                             for tag, front_image, bird_view, heatmap in zip(tags, front_images, bird_views, heatmaps):
@@ -188,7 +195,7 @@ def main(_):
                         
                         
 
-            print('train done. total epoch:{} iter:{}'.format(
+            log_print('train done. total epoch:{} iter:{}'.format(
                 epoch, model.global_step.eval()))
                 
             # finallly save model

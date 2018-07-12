@@ -18,12 +18,12 @@ __C = edict()
 cfg = __C
 
 # for dataset dir
-__C.DATA_DIR = '/media/hdc/KITTI/for_voxelnet/cropped_dataset'
-__C.CALIB_DIR = '/media/hdc/KITTI/calib/data_object_calib/training/calib'
+__C.DATA_DIR = '/mine/KITTI_DAT'
+#__C.CALIB_DIR = '/media/hdc/KITTI/calib/data_object_calib/training/calib'
 
 
 # for gpu allocation
-__C.GPU_AVAILABLE = '0,1'
+__C.GPU_AVAILABLE = '0'
 __C.GPU_USE_COUNT = len(__C.GPU_AVAILABLE.split(','))
 __C.GPU_MEMORY_FRACTION = 1
 

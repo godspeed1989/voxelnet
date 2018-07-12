@@ -11,7 +11,8 @@ from model import RPN3D
 from config import cfg
 from utils import *
 from utils.kitti_loader import iterate_data, sample_test_data
-
+from termcolor import cprint
+print_green = lambda x: cprint(x, 'green', attrs=['bold'])
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='testing')
@@ -58,9 +59,11 @@ if __name__ == '__main__':
                 avail_gpus=cfg.GPU_AVAILABLE.split(',')
             )
             if tf.train.get_checkpoint_state(save_model_dir):
-                print("Reading model parameters from %s" % save_model_dir)
+                print_green("Reading model parameters from {}".format(save_model_dir))
                 model.saver.restore(
                     sess, tf.train.latest_checkpoint(save_model_dir))
+            else:
+                print_green("Fail to read model parameters from {}".format(save_model_dir))
             
             
             for batch in iterate_data(val_dir, shuffle=False, aug=False, is_testset=False, batch_size=args.single_batch_size * cfg.GPU_USE_COUNT, multi_gpu_sum=cfg.GPU_USE_COUNT):
@@ -79,7 +82,7 @@ if __name__ == '__main__':
                         labels = box3d_to_label([result[:, 1:8]], [result[:, 0]], [result[:, -1]], coordinate='lidar')[0]
                         for line in labels:
                             f.write(line)
-                        print('write out {} objects to {}'.format(len(labels), tag))
+                        print_green('write out {} objects to {}'.format(len(labels), tag))
                 # dump visualizations
                 if args.vis:
                     for tag, front_image, bird_view, heatmap in zip(tags, front_images, bird_views, heatmaps):
