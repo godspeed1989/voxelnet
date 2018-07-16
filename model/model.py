@@ -1,16 +1,14 @@
 #!/usr/bin/env python
 # -*- coding:UTF-8 -*-
 
-
-import sys
 import os
+import numpy as np
 import tensorflow as tf
-import cv2
-from numba import jit
-
+from utils.utils import *
+from utils.colorize import *
 from config import cfg
-from utils import *
 from model.group_pointcloud import FeatureNet
+from model.group_pointcloud_sift import FeatureNetSIFT
 from model.rpn import MiddleAndRPN
 
 
@@ -64,15 +62,17 @@ class RPN3D(object):
                 with tf.device('/gpu:{}'.format(dev)), tf.name_scope('gpu_{}'.format(dev)):
                     # must use name scope here since we do not want to create new variables
                     # graph
-                    feature = FeatureNet(
-                        training=self.is_train, batch_size=self.single_batch_size)
+                    if cfg.FEATURE_NET_TYPE == 'FeatureNet':
+                        feature = FeatureNet(training=self.is_train, batch_size=self.single_batch_size)
+                    elif cfg.FEATURE_NET_TYPE == 'FeatureNetSIFT':
+                        feature = FeatureNetSIFT(training=self.is_train, batch_size=self.single_batch_size)
                     rpn = MiddleAndRPN(
                         input=feature.outputs, alpha=self.alpha, beta=self.beta, training=self.is_train)
                     tf.get_variable_scope().reuse_variables()
                     # input
-                    self.vox_feature.append(feature.feature)
-                    self.vox_number.append(feature.number)
-                    self.vox_coordinate.append(feature.coordinate)
+                    self.vox_feature.append(feature.feature_pl)
+                    self.vox_number.append(feature.number_pl)
+                    self.vox_coordinate.append(feature.coordinate_pl)
                     self.targets.append(rpn.targets)
                     self.pos_equal_one.append(rpn.pos_equal_one)
                     self.pos_equal_one_sum.append(rpn.pos_equal_one_sum)

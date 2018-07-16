@@ -19,8 +19,10 @@ cfg = __C
 
 # for dataset dir
 __C.DATA_DIR = '/mine/KITTI_DAT'
-#__C.CALIB_DIR = '/media/hdc/KITTI/calib/data_object_calib/training/calib'
+__C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 
+# select FeatureNet or FeatureNetSIFT
+__C.FEATURE_NET_TYPE = 'FeatureNet'
 
 # for gpu allocation
 __C.GPU_AVAILABLE = '0'

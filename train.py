@@ -2,24 +2,24 @@
 # -*- coding:UTF-8 -*-
 
 
-import glob
-import argparse
 import os
 import time
 import sys
+import argparse
+import numpy as np
 import tensorflow as tf
 from itertools import count
 
 from config import cfg
 from model import RPN3D
-from utils import *
 from utils.kitti_loader import iterate_data, sample_test_data
+from utils.utils import box3d_to_label
 from train_hook import check_if_should_pause
 from termcolor import cprint
 
 log_f = None
-def log_print(s):
-    cprint(s, 'green', attrs=['bold'])
+def log_print(s, color='green'):
+    cprint(s, color, attrs=['bold'])
     log_f.write(s + '\n')
 
 
@@ -142,10 +142,10 @@ def main(_):
                             ret = model.predict_step(sess, batch, summary=True)
                             summary_writer.add_summary(ret[-1], global_counter)
                         except:
-                            log_print("prediction skipped due to error")
+                            log_print('prediction skipped due to error', 'red')
                     
                     if check_if_should_pause(args.tag):
-                        model.saver.save(sess, os.path.join(save_model_dir, 'checkpoint'), global_step=model.global_step)
+                        model.saver.save(sess, os.path.join(save_model_dir, timestr), global_step=model.global_step)
                         log_print('pause and save model @ {} steps:{}'.format(save_model_dir, model.global_step.eval()))
                         sys.exit(0)
                             
@@ -153,7 +153,7 @@ def main(_):
                 
                 sess.run(model.epoch_add_op)
                 
-                model.saver.save(sess, os.path.join(save_model_dir, 'checkpoint'), global_step=model.global_step)
+                model.saver.save(sess, os.path.join(save_model_dir, timestr), global_step=model.global_step)
         
                 # dump test data every 10 epochs
                 if ( epoch + 1 ) % 10 == 0:
