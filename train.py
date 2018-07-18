@@ -48,7 +48,7 @@ dataset_dir = cfg.DATA_DIR
 if cfg.USE_AUG_DATA:
     AUG_DATA = False
     HAS_VOXEL = True
-    train_dir = os.path.join(cfg.DATA_DIR, 'training', 'training_aug')
+    train_dir = os.path.join(cfg.DATA_DIR, 'training', cfg.AUG_DATA_FOLDER)
 else:
     AUG_DATA = True
     HAS_VOXEL = False

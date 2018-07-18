@@ -37,7 +37,7 @@ class Processor:
                 labels = ['']
             tag = self.data_tag[load_index]
             if self.f_voxel is None:
-                voxel = process_pointcloud(raw_lidar)
+                voxel = process_pointcloud(tag, raw_lidar)
             else:
                 voxel_files = np.load(self.f_voxel[load_index])
                 voxel = {}
@@ -58,12 +58,12 @@ def iterate_data(data_dir, has_voxel=False, shuffle=False, aug=False,
     f_label = glob.glob(os.path.join(data_dir, 'label_2', '*.txt'))
     if has_voxel:
         f_voxel = glob.glob(os.path.join(data_dir, 'voxel', '*.npz'))
+        f_voxel.sort()
     else:
         f_voxel = None
     f_rgb.sort()
     f_lidar.sort()
     f_label.sort()
-    f_voxel.sort()
     data_tag = [name.split('/')[-1].split('.')[-2] for name in f_rgb]
 
     assert len(data_tag) != 0, "dataset folder is not correct"

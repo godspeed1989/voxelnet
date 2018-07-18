@@ -19,6 +19,9 @@ cfg = __C
 
 # for dataset dir
 __C.USE_AUG_DATA = True
+__C.REMOVE_GROUND = True
+__C.AUG_DATA_FOLDER = 'training_aug_nonground'
+
 __C.DATA_DIR = '/mine/KITTI_DAT'
 __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 

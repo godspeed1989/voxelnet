@@ -8,14 +8,12 @@ import glob
 from config import cfg
 from utils.data_aug import aug_data
 
-object_dir = '/mine/KITTI_DAT/training'
+object_dir = '/mine/KITTI_DAT/validation'
+output_dir = cfg.AUG_DATA_FOLDER
 
 def worker(tag):
-    try:
-        new_tag, rgb, lidar, voxel_dict, label = aug_data(tag, object_dir)
-    except:
-        print('ERROR Process {}'.format(tag))
-    output_path = os.path.join(object_dir, 'training_aug')
+    new_tag, rgb, lidar, voxel_dict, label = aug_data(tag, object_dir)
+    output_path = os.path.join(object_dir, output_dir)
 
     cv2.imwrite(os.path.join(output_path, 'image_2', new_tag + '.png'), rgb)
     lidar.reshape(-1).tofile(os.path.join(output_path, 'velodyne', new_tag + '.bin'))
@@ -29,11 +27,11 @@ def main(args):
     fl = glob.glob(os.path.join(object_dir, 'label_2', '*.txt'))
     candidate = [f.split('/')[-1].split('.')[0] for f in fl]
     print('generate {} tags'.format(len(candidate)))
-    os.makedirs(os.path.join(object_dir, 'training_aug'), exist_ok=True)
-    os.makedirs(os.path.join(object_dir, 'training_aug', 'image_2'), exist_ok=True)
-    os.makedirs(os.path.join(object_dir, 'training_aug', 'velodyne'), exist_ok=True)
-    os.makedirs(os.path.join(object_dir, 'training_aug', 'voxel'), exist_ok=True)
-    os.makedirs(os.path.join(object_dir, 'training_aug', 'label_2'), exist_ok=True)
+    os.makedirs(os.path.join(object_dir, output_dir), exist_ok=True)
+    os.makedirs(os.path.join(object_dir, output_dir, 'image_2'), exist_ok=True)
+    os.makedirs(os.path.join(object_dir, output_dir, 'velodyne'), exist_ok=True)
+    os.makedirs(os.path.join(object_dir, output_dir, 'voxel'), exist_ok=True)
+    os.makedirs(os.path.join(object_dir, output_dir, 'label_2'), exist_ok=True)
 
     pool = mp.Pool(args.num_workers)
     pool.map(worker, candidate)
