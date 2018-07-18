@@ -12,7 +12,11 @@ object_dir = '/mine/KITTI_DAT/validation'
 output_dir = cfg.AUG_DATA_FOLDER
 
 def worker(tag):
-    new_tag, rgb, lidar, voxel_dict, label = aug_data(tag, object_dir)
+    try:
+        new_tag, rgb, lidar, voxel_dict, label = aug_data(tag, object_dir)
+    except:
+        print('ERROR aug {}'.format(tag))
+        return
     output_path = os.path.join(object_dir, output_dir)
 
     cv2.imwrite(os.path.join(output_path, 'image_2', new_tag + '.png'), rgb)

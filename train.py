@@ -145,6 +145,7 @@ def main(_):
 
                         ret = model.validate_step(sess, batch, summary=True)
                         summary_writer.add_summary(ret[-1], global_counter)
+                        log_print('validation: loss: {:.4f} reg_loss: {:.4f} cls_loss: {:.4f} '.format(ret[0], ret[1], ret[2]))
 
                         try:
                             ret = model.predict_step(sess, batch, summary=True)

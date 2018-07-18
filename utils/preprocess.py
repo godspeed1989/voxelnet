@@ -18,12 +18,7 @@ num_iter_ = 15
 th_dist_ = 0.1
 stable_delta_ = 10
 
-def extract_initial_seeds_(pc_velo_orig):
-    pc_velo = pc_velo_orig[:, :3].copy()
-    # Error point removal
-    # As there are some error mirror reflection under the ground
-    # here regardless point under 2* sensor_height
-    pc_velo = pc_velo[pc_velo[:, 2] > -1.5*sensor_height_, :]
+def extract_initial_seeds_(pc_velo):
     # Sort along Z-axis
     pc_velo[pc_velo[:, 2].argsort()]
     # LPR is the mean of low point representative
@@ -52,7 +47,12 @@ def estimate_plane_(g_ground_pc):
     th_dist_d_ = - d_ + th_dist_
     return th_dist_d_, normal_
 
-def filter_ground(pc_velo):
+def filter_ground(pc_velo_orig):
+    pc_velo = pc_velo_orig.copy()
+    # Error point removal
+    # As there are some error mirror reflection under the ground
+    # here regardless point under 2* sensor_height
+    pc_velo = pc_velo[pc_velo[:, 2] > -1.5*sensor_height_, :]
     # Extract init ground seeds.
     g_seeds_pc = extract_initial_seeds_(pc_velo)
     g_ground_pc = g_seeds_pc
