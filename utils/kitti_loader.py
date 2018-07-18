@@ -15,28 +15,35 @@ from utils.data_aug import aug_data
 from utils.preprocess import process_pointcloud
 
 class Processor:
-    def __init__(self, data_tag, f_rgb, f_lidar, f_label, data_dir, aug, is_testset):
+    def __init__(self, data_tag, f_rgb, f_lidar, f_label, f_voxel, data_dir, aug, is_testset):
         self.data_tag=data_tag
         self.f_rgb = f_rgb
         self.f_lidar = f_lidar
         self.f_label = f_label
+        self.f_voxel = f_voxel
         self.data_dir = data_dir
         self.aug = aug
         self.is_testset = is_testset
-    
+
     def __call__(self,load_index):
         if self.aug:
             ret = aug_data(self.data_tag[load_index], self.data_dir)
         else:
             rgb = cv2.resize(cv2.imread(self.f_rgb[load_index]), (cfg.IMAGE_WIDTH, cfg.IMAGE_HEIGHT))
-            #rgb.append( cv2.imread(f_rgb[load_index]) )
             raw_lidar = np.fromfile(self.f_lidar[load_index], dtype=np.float32).reshape((-1, 4))
             if not self.is_testset:
                 labels = [line for line in open(self.f_label[load_index], 'r').readlines()]
             else:
                 labels = ['']
             tag = self.data_tag[load_index]
-            voxel = process_pointcloud(raw_lidar)
+            if self.f_voxel is None:
+                voxel = process_pointcloud(raw_lidar)
+            else:
+                voxel_files = np.load(self.f_voxel[load_index])
+                voxel = {}
+                voxel['feature_buffer'] = voxel_files['feature_buffer']
+                voxel['coordinate_buffer'] = voxel_files['coordinate_buffer']
+                voxel['number_buffer'] = voxel_files['number_buffer']
             ret = [tag, rgb, raw_lidar, voxel, labels]
         return ret
 
@@ -44,19 +51,25 @@ class Processor:
 TRAIN_POOL = multiprocessing.Pool(4)
 VAL_POOL = multiprocessing.Pool(2)
 
-def iterate_data(data_dir, shuffle=False, aug=False, is_testset=False, batch_size=1, multi_gpu_sum=1):
+def iterate_data(data_dir, has_voxel=False, shuffle=False, aug=False,
+                 is_testset=False, batch_size=1, multi_gpu_sum=1):
     f_rgb = glob.glob(os.path.join(data_dir, 'image_2', '*.png'))
     f_lidar = glob.glob(os.path.join(data_dir, 'velodyne', '*.bin'))
     f_label = glob.glob(os.path.join(data_dir, 'label_2', '*.txt'))
+    if has_voxel:
+        f_voxel = glob.glob(os.path.join(data_dir, 'voxel', '*.npz'))
+    else:
+        f_voxel = None
     f_rgb.sort()
     f_lidar.sort()
     f_label.sort()
-    
+    f_voxel.sort()
     data_tag = [name.split('/')[-1].split('.')[-2] for name in f_rgb]
 
     assert len(data_tag) != 0, "dataset folder is not correct"
-    assert len(data_tag) == len(f_rgb) == len(f_lidar) , "dataset folder is not correct"
-    
+    assert len(data_tag) == len(f_rgb) == len(f_lidar), "dataset folder is not correct"
+    assert len(f_lidar) == len(f_label) == len(f_voxel), "dataset folder is not correct"
+
     nums = len(f_rgb)
     indices = list(range(nums))
     if shuffle:
@@ -64,12 +77,12 @@ def iterate_data(data_dir, shuffle=False, aug=False, is_testset=False, batch_siz
 
     num_batches = int(math.floor( nums / float(batch_size) ))
 
-    proc=Processor(data_tag, f_rgb, f_lidar, f_label, data_dir, aug, is_testset)
+    proc=Processor(data_tag, f_rgb, f_lidar, f_label, f_voxel, data_dir, aug, is_testset)
 
     for batch_idx in range(num_batches):
         start_idx = batch_idx * batch_size
         excerpt = indices[start_idx:start_idx + batch_size]
-        
+
         rets=TRAIN_POOL.map(proc,excerpt)
 
         tag = [ ret[0] for ret in rets ]
@@ -108,13 +121,13 @@ def sample_test_data(data_dir, batch_size=1, multi_gpu_sum=1):
     f_rgb.sort()
     f_lidar.sort()
     f_label.sort()
-    
+
     data_tag = [name.split('/')[-1].split('.')[-2] for name in f_rgb]
-    
+
     assert(len(data_tag) == len(f_rgb) == len(f_lidar)), "dataset folder is not correct"
-    
+
     nums = len(f_rgb)
-    
+
     indices = list(range(nums))
     np.random.shuffle(indices)
 
@@ -122,17 +135,17 @@ def sample_test_data(data_dir, batch_size=1, multi_gpu_sum=1):
 
 
     excerpt = indices[0:batch_size]
-    
-    proc_val=Processor(data_tag, f_rgb, f_lidar, f_label, data_dir, False, False)
-    
+
+    proc_val=Processor(data_tag, f_rgb, f_lidar, f_label, None, data_dir, False, False)
+
     rets=VAL_POOL.map(proc_val,excerpt)
-    
+
     tag = [ ret[0] for ret in rets ]
     rgb = [ ret[1] for ret in rets ]
     raw_lidar = [ ret[2] for ret in rets ]
     voxel = [ ret[3] for ret in rets ]
     labels = [ ret[4] for ret in rets ]
-    
+
     # only for voxel -> [gpu, k_single_batch, ...]
     vox_feature, vox_number, vox_coordinate = [], [], []
     single_batch_size = int(batch_size / multi_gpu_sum)

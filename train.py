@@ -6,6 +6,7 @@ import os
 import time
 import sys
 import argparse
+import cv2
 import numpy as np
 import tensorflow as tf
 from itertools import count
@@ -44,7 +45,14 @@ args = parser.parse_args()
 
 
 dataset_dir = cfg.DATA_DIR
-train_dir = os.path.join(cfg.DATA_DIR, 'training')
+if cfg.USE_AUG_DATA:
+    AUG_DATA = False
+    HAS_VOXEL = True
+    train_dir = os.path.join(cfg.DATA_DIR, 'training', 'training_aug')
+else:
+    AUG_DATA = True
+    HAS_VOXEL = False
+    train_dir = os.path.join(cfg.DATA_DIR, 'training')
 val_dir = os.path.join(cfg.DATA_DIR, 'validation')
 log_dir = os.path.join('./log', args.tag)
 save_model_dir = os.path.join('./save_model', args.tag)
@@ -107,54 +115,54 @@ def main(_):
             for epoch in range(start_epoch, args.max_epoch):
                 counter = 0
                 batch_time = time.time()
-                for batch in iterate_data(train_dir, shuffle=True, aug=True, is_testset=False, batch_size=args.single_batch_size * cfg.GPU_USE_COUNT, multi_gpu_sum=cfg.GPU_USE_COUNT):
-                    
+                for batch in iterate_data(train_dir, has_voxel=HAS_VOXEL, shuffle=True, aug=AUG_DATA, is_testset=False,
+                                          batch_size=args.single_batch_size * cfg.GPU_USE_COUNT, multi_gpu_sum=cfg.GPU_USE_COUNT):
                     counter += 1
                     global_counter += 1
-                    
+
                     if counter % summary_interval == 0:
                         is_summary = True
                     else:
                         is_summary = False
-                    
+
                     start_time = time.time()
                     ret = model.train_step( sess, batch, train=True, summary = is_summary )
                     forward_time = time.time() - start_time
                     batch_time = time.time() - batch_time
 
-                    
-                    log_print('train: {} @ epoch:{}/{} loss: {:.4f} reg_loss: {:.4f} cls_loss: {:.4f} cls_pos_loss: {:.4f} cls_neg_loss: {:.4f} forward time: {:.4f} batch time: {:.4f}'.format(counter,epoch, args.max_epoch, ret[0], ret[1], ret[2], ret[3], ret[4], forward_time, batch_time))
-                    
+                    log_print('train: {} @ epoch:{}/{} loss: {:.4f} reg_loss: {:.4f} cls_loss: {:.4f} cls_pos_loss: {:.4f} cls_neg_loss: {:.4f} forward time: {:.4f} batch time: {:.4f}'.
+                                format(counter,epoch, args.max_epoch, ret[0], ret[1], ret[2], ret[3], ret[4], forward_time, batch_time))
+
                     #print(counter, summary_interval, counter % summary_interval)
                     if counter % summary_interval == 0:
                         log_print("summary_interval now")
                         summary_writer.add_summary(ret[-1], global_counter)
-                            
+
                     #print(counter, summary_val_interval, counter % summary_val_interval)
                     if counter % summary_val_interval == 0:
                         log_print("summary_val_interval now")
                         batch = sample_test_data(val_dir, args.single_batch_size * cfg.GPU_USE_COUNT, multi_gpu_sum=cfg.GPU_USE_COUNT)
-                        
+
                         ret = model.validate_step(sess, batch, summary=True)
                         summary_writer.add_summary(ret[-1], global_counter)
-                        
+
                         try:
                             ret = model.predict_step(sess, batch, summary=True)
                             summary_writer.add_summary(ret[-1], global_counter)
                         except:
                             log_print('prediction skipped due to error', 'red')
-                    
+
                     if check_if_should_pause(args.tag):
                         model.saver.save(sess, os.path.join(save_model_dir, timestr), global_step=model.global_step)
                         log_print('pause and save model @ {} steps:{}'.format(save_model_dir, model.global_step.eval()))
                         sys.exit(0)
-                            
+
                     batch_time = time.time()
-                
+
                 sess.run(model.epoch_add_op)
-                
+
                 model.saver.save(sess, os.path.join(save_model_dir, timestr), global_step=model.global_step)
-        
+
                 # dump test data every 10 epochs
                 if ( epoch + 1 ) % 10 == 0:
                     # create output folder
@@ -162,14 +170,14 @@ def main(_):
                     os.makedirs(os.path.join(args.output_path, str(epoch), 'data'), exist_ok=True)
                     if args.vis:
                         os.makedirs(os.path.join(args.output_path, str(epoch), 'vis'), exist_ok=True)
-                    
-                    for batch in iterate_data(val_dir, shuffle=False, aug=False, is_testset=False, batch_size=args.single_batch_size * cfg.GPU_USE_COUNT, multi_gpu_sum=cfg.GPU_USE_COUNT):
-                        
+
+                    for batch in iterate_data(val_dir, shuffle=False, aug=False, has_voxel=False, is_testset=False,
+                                              batch_size=args.single_batch_size * cfg.GPU_USE_COUNT, multi_gpu_sum=cfg.GPU_USE_COUNT):
                         if args.vis:
                             tags, results, front_images, bird_views, heatmaps = model.predict_step(sess, batch, summary=False, vis=True)
                         else:
                             tags, results = model.predict_step(sess, batch, summary=False, vis=False)
-                                
+
                         for tag, result in zip(tags, results):
                             of_path = os.path.join(args.output_path, str(epoch), 'data', tag + '.txt')
                             with open(of_path, 'w+') as f:
@@ -186,18 +194,18 @@ def main(_):
                                 cv2.imwrite( front_img_path, front_image )
                                 cv2.imwrite( bird_view_path, bird_view )
                                 cv2.imwrite( heatmap_path, heatmap )
-        
+
                     # execute evaluation code
                     cmd_1 = "./kitti_eval/launch_test.sh"
                     cmd_2 = os.path.join( args.output_path, str(epoch) )
                     cmd_3 = os.path.join( args.output_path, str(epoch), 'log' )
                     os.system( " ".join( [cmd_1, cmd_2, cmd_3] ) )
-                        
-                        
+
+
 
             log_print('train done. total epoch:{} iter:{}'.format(
                 epoch, model.global_step.eval()))
-                
+
             # finallly save model
             model.saver.save(sess, os.path.join(
                 save_model_dir, 'checkpoint'), global_step=model.global_step)

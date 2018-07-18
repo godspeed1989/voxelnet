@@ -18,6 +18,7 @@ __C = edict()
 cfg = __C
 
 # for dataset dir
+__C.USE_AUG_DATA = True
 __C.DATA_DIR = '/mine/KITTI_DAT'
 __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 
