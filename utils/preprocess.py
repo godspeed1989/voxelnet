@@ -76,18 +76,25 @@ def process_pointcloud(tag, lidar, cls=cfg.DETECT_OBJ):
     #   (N, 4)
     # Output:
     #   voxel_dict
+    '''
     if cls == 'Car':
         scene_size = np.array([4, 80, 70.4], dtype=np.float32)
         voxel_size = np.array([0.4, 0.2, 0.2], dtype=np.float32)
         grid_size = np.array([10, 400, 352], dtype=np.int64)
         lidar_coord = np.array([0, 40, 3], dtype=np.float32)
-        max_point_number = 35
     else:
         scene_size = np.array([4, 40, 48], dtype=np.float32)
         voxel_size = np.array([0.4, 0.2, 0.2], dtype=np.float32)
         grid_size = np.array([10, 200, 240], dtype=np.int64)
         lidar_coord = np.array([0, 20, 3], dtype=np.float32)
-        max_point_number = 45
+    '''
+    # coordinate is (Z, Y, X)
+    scene_size = np.array([cfg.Z_MAX - cfg.Z_MIN, cfg.Y_MAX - cfg.Y_MIN, cfg.X_MAX - cfg.X_MIN], dtype=np.float32)
+    voxel_size = np.array([cfg.VOXEL_Z_SIZE, cfg.VOXEL_Y_SIZE, cfg.VOXEL_X_SIZE], dtype=np.float32)
+    grid_size = np.array([cfg.GRID_Z_SIZE, cfg.GRID_Y_SIZE, cfg.GRID_X_SIZE], dtype=np.int64)
+    # (X, Y, Z)
+    lidar_coord = np.array([-cfg.X_MIN, -cfg.Y_MIN, -cfg.Z_MIN], dtype=np.float32)
+
     np.random.shuffle(lidar)
 
     if cfg.REMOVE_GROUND:
@@ -96,6 +103,7 @@ def process_pointcloud(tag, lidar, cls=cfg.DETECT_OBJ):
 
     shifted_coord = point_cloud[:, :3] + lidar_coord
     # reverse the point cloud coordinate (X, Y, Z) -> (Z, Y, X)
+    # get voxel indice for each point
     voxel_index = np.floor(
         shifted_coord[:, ::-1] / voxel_size).astype(np.int)
 
@@ -105,7 +113,6 @@ def process_pointcloud(tag, lidar, cls=cfg.DETECT_OBJ):
         voxel_index[:, 1] >= 0, voxel_index[:, 1] < grid_size[1])
     bound_z = np.logical_and(
         voxel_index[:, 0] >= 0, voxel_index[:, 0] < grid_size[0])
-
     bound_box = np.logical_and(np.logical_and(bound_x, bound_y), bound_z)
 
     point_cloud = point_cloud[bound_box]
@@ -113,15 +120,14 @@ def process_pointcloud(tag, lidar, cls=cfg.DETECT_OBJ):
 
     # [K, 3] coordinate buffer as described in the paper
     coordinate_buffer = np.unique(voxel_index, axis=0)
-
+    # K is the number of none empty voxel
     K = len(coordinate_buffer)
-    T = max_point_number
 
-    # [K, 1] store number of points in each voxel grid
-    number_buffer = np.zeros(shape=(K), dtype=np.int64)
+    # [K,] store number of points in each voxel grid
+    number_buffer = np.zeros(shape=(K,), dtype=np.int64)
 
     # [K, T, 7] feature buffer as described in the paper
-    feature_buffer = np.zeros(shape=(K, T, 7), dtype=np.float32)
+    feature_buffer = np.zeros(shape=(K, cfg.VOXEL_POINT_COUNT, cfg.POINT_FEATURE_LEN), dtype=np.float32)
 
     # build a reverse index for coordinate buffer
     index_buffer = {}
@@ -131,15 +137,18 @@ def process_pointcloud(tag, lidar, cls=cfg.DETECT_OBJ):
     for voxel, point in zip(voxel_index, point_cloud):
         index = index_buffer[tuple(voxel)]
         number = number_buffer[index]
-        if number < T:
+        if number < cfg.VOXEL_POINT_COUNT:
             feature_buffer[index, number, :4] = point
             number_buffer[index] += 1
+            if cfg.POINT_FEATURE_LEN == 4:
+                feature_buffer[index, number, :3] = point[:3] - voxel*voxel_size + voxel_size*.5
 
-    feature_buffer[:, :, -3:] = feature_buffer[:, :, :3] - \
-        feature_buffer[:, :, :3].sum(axis=1, keepdims=True)/number_buffer.reshape(K, 1, 1)
+    if cfg.POINT_FEATURE_LEN == 7:
+        # TODO: zero pad is substracted too
+        feature_buffer[:, :, -3:] = feature_buffer[:, :, :3] - \
+            feature_buffer[:, :, :3].sum(axis=1, keepdims=True)/number_buffer.reshape(K, 1, 1)
 
     voxel_dict = {'feature_buffer': feature_buffer,
                   'coordinate_buffer': coordinate_buffer,
                   'number_buffer': number_buffer}
     return voxel_dict
-

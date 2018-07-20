@@ -110,7 +110,7 @@ def main(_):
 
             parameter_num = np.sum([np.prod(v.shape.as_list()) for v in tf.trainable_variables()])
             log_print('Parameter number: {}'.format(parameter_num))
-
+            
             # training
             for epoch in range(start_epoch, args.max_epoch):
                 counter = 0
@@ -159,9 +159,9 @@ def main(_):
                         sys.exit(0)
 
                     batch_time = time.time()
-
+                
                 sess.run(model.epoch_add_op)
-
+                
                 model.saver.save(sess, os.path.join(save_model_dir, timestr), global_step=model.global_step)
 
                 # dump test data every 10 epochs

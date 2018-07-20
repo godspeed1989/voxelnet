@@ -19,8 +19,8 @@ cfg = __C
 
 # for dataset dir
 __C.USE_AUG_DATA = True
-__C.REMOVE_GROUND = True
 __C.AUG_DATA_FOLDER = 'augment_nonground'
+__C.REMOVE_GROUND = True
 
 __C.DATA_DIR = '/mine/KITTI_DAT'
 __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
@@ -36,12 +36,18 @@ __C.GPU_MEMORY_FRACTION = 1
 # selected object
 __C.DETECT_OBJ = 'Car'  # Pedestrian/Cyclist
 if __C.DETECT_OBJ == 'Car':
+    __C.Z_MIN = -3
+    __C.Z_MAX = 1
     __C.Y_MIN = -40
     __C.Y_MAX = 40
     __C.X_MIN = 0
     __C.X_MAX = 70.4
-    __C.VOXEL_X_SIZE = 0.2
+    __C.VOXEL_Z_SIZE = 0.4
     __C.VOXEL_Y_SIZE = 0.2
+    __C.VOXEL_X_SIZE = 0.2
+    __C.GRID_Z_SIZE = int((__C.Z_MAX - __C.Z_MIN) / __C.VOXEL_Z_SIZE)
+    __C.GRID_Y_SIZE = int((__C.Y_MAX - __C.Y_MIN) / __C.VOXEL_Y_SIZE)
+    __C.GRID_X_SIZE = int((__C.X_MAX - __C.X_MIN) / __C.VOXEL_X_SIZE)
     __C.VOXEL_POINT_COUNT = 35
     __C.INPUT_WIDTH = int((__C.X_MAX - __C.X_MIN) / __C.VOXEL_X_SIZE)
     __C.INPUT_HEIGHT = int((__C.Y_MAX - __C.Y_MIN) / __C.VOXEL_Y_SIZE)
@@ -61,6 +67,10 @@ else:
     __C.FEATURE_RATIO = 2
     __C.FEATURE_WIDTH = int(__C.INPUT_WIDTH / __C.FEATURE_RATIO)
     __C.FEATURE_HEIGHT = int(__C.INPUT_HEIGHT / __C.FEATURE_RATIO)
+
+# paper is 7
+# 4 = z, y, x, inte
+__C.POINT_FEATURE_LEN = 4
 
 # set the log image scale factor
 __C.BV_LOG_FACTOR = 4
@@ -98,7 +108,7 @@ if __C.DATA_SETS_TYPE == 'kitti':
     __C.TOP_WIDTH = (__C.TOP_X_MAX - __C.TOP_X_MIN) // __C.TOP_X_DIVISION
     __C.TOP_HEIGHT = (__C.TOP_Y_MAX - __C.TOP_Y_MIN) // __C.TOP_Y_DIVISION
     __C.TOP_CHANNEL = (__C.TOP_Z_MAX - __C.TOP_Z_MIN) // __C.TOP_Z_DIVISION
-
+'''
 # for 2d proposal to 3d proposal
 __C.PROPOSAL3D_Z_MIN = -2.3  # -2.52
 __C.PROPOSAL3D_Z_MAX = 1.5  # -1.02
@@ -107,7 +117,7 @@ __C.PROPOSAL3D_Z_MAX = 1.5  # -1.02
 __C.USE_VGG_AS_RPN = 0
 __C.USE_RESNET_AS_RPN = 0
 __C.USE_RESNEXT_AS_RPN = 0
-
+'''
 # for camera and lidar coordination convert
 if __C.DATA_SETS_TYPE == 'kitti':
     # cal mean from train set

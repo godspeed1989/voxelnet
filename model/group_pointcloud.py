@@ -48,9 +48,9 @@ class FeatureNet(object):
 
         # scalar
         self.batch_size = batch_size
-        # [ΣK, 35/45, 7]
+        # [ΣK, 35/45, F]
         self.feature_pl = tf.placeholder(
-            tf.float32, [None, cfg.VOXEL_POINT_COUNT, 7], name='feature')
+            tf.float32, [None, cfg.VOXEL_POINT_COUNT, cfg.POINT_FEATURE_LEN], name='feature')
         # [ΣK]
         self.number_pl = tf.placeholder(tf.int64, [None], name='number')
         # [ΣK, 4], each row stores (batch, d, h, w)

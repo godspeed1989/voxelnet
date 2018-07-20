@@ -137,8 +137,7 @@ class RPN3D(object):
                 self.boxes2d, self.boxes2d_scores, max_output_size=cfg.RPN_NMS_POST_TOPK, iou_threshold=cfg.RPN_NMS_THRESH)
 
         # summary and saver
-        self.saver = tf.train.Saver(write_version=tf.train.SaverDef.V2,
-                                    max_to_keep=10, pad_step_number=True, keep_checkpoint_every_n_hours=1.0)
+        self.saver = tf.train.Saver(max_to_keep=10, pad_step_number=True, keep_checkpoint_every_n_hours=1.0)
 
         self.train_summary = tf.summary.merge([
             tf.summary.scalar('train/loss', self.loss),
@@ -169,9 +168,9 @@ class RPN3D(object):
         # input:
         #     (N) tag
         #     (N, N') label
-        #     vox_feature
-        #     vox_number
-        #     vox_coordinate
+        #     vox_feature (K, 35/45, 7)
+        #     vox_number (K,)  number of points in each voxel grid
+        #     vox_coordinate (K, 3)  coordinate buffer as described in the paper
         tag = data[0]
         label = data[1]
         vox_feature = data[2]

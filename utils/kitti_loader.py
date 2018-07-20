@@ -67,8 +67,8 @@ def iterate_data(data_dir, has_voxel=False, shuffle=False, aug=False,
     data_tag = [name.split('/')[-1].split('.')[-2] for name in f_rgb]
 
     assert len(data_tag) != 0, "dataset folder is not correct"
-    assert len(data_tag) == len(f_rgb) == len(f_lidar), "dataset folder is not correct"
-    assert len(f_lidar) == len(f_label) == len(f_voxel), "dataset folder is not correct"
+    assert len(data_tag) == len(f_rgb) == len(f_lidar) == len(f_label), "dataset folder is not correct"
+    if has_voxel: assert len(f_voxel) == len(f_label), "dataset folder is not correct"
 
     nums = len(f_rgb)
     indices = list(range(nums))
@@ -133,7 +133,7 @@ def sample_test_data(data_dir, batch_size=1, multi_gpu_sum=1):
 
     num_batches = int(math.floor( nums / float(batch_size) ))
 
-
+    # only select one batch data
     excerpt = indices[0:batch_size]
 
     proc_val=Processor(data_tag, f_rgb, f_lidar, f_label, None, data_dir, False, False)
@@ -178,6 +178,7 @@ def build_input(voxel_dict_list):
         feature_list.append(voxel_dict['feature_buffer'])
         number_list.append(voxel_dict['number_buffer'])
         coordinate = voxel_dict['coordinate_buffer']
+        # (K, 3) -> (K, 4) pad batch number at start
         coordinate_list.append(
             np.pad(coordinate, ((0, 0), (1, 0)),
                    mode='constant', constant_values=i))
