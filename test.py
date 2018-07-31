@@ -92,13 +92,3 @@ if __name__ == '__main__':
                         cv2.imwrite( front_img_path, front_image )
                         cv2.imwrite( bird_view_path, bird_view )
                         cv2.imwrite( heatmap_path, heatmap )
-
-
-
-
-
-
-
-
-
-

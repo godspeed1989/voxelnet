@@ -39,13 +39,14 @@ parser.add_argument('-be', '--beta', type=float, nargs='?', default=10.0,
                     help='set beta in los function')
 parser.add_argument('--output-path', type=str, nargs='?',
                     default='./predictions', help='results output dir')
-parser.add_argument('-v', '--vis', type=bool, nargs='?', default=False,
+parser.add_argument('-r', '--restore', type=bool, nargs='?', default=False,
+                    help='set the flag to True if restore')
+parser.add_argument('-v', '--vis', type=bool, nargs='?', default=True,
                     help='set the flag to True if dumping visualizations')
 args = parser.parse_args()
 
-
 dataset_dir = cfg.DATA_DIR
-if cfg.USE_AUG_DATA:
+if cfg.USE_AUGED_DATA:
     AUG_DATA = False
     HAS_VOXEL = True
     train_dir = os.path.join(cfg.DATA_DIR, 'training', cfg.AUG_DATA_FOLDER)
@@ -91,10 +92,9 @@ def main(_):
                 avail_gpus=cfg.GPU_AVAILABLE.split(',')
             )
             # param init/restore
-            if tf.train.get_checkpoint_state(save_model_dir):
+            if args.restore and tf.train.get_checkpoint_state(save_model_dir):
                 log_print("Reading model parameters from %s" % save_model_dir)
-                model.saver.restore(
-                    sess, tf.train.latest_checkpoint(save_model_dir))
+                model.saver.restore(sess, tf.train.latest_checkpoint(save_model_dir))
                 start_epoch = model.epoch.eval() + 1
                 global_counter = model.global_step.eval() + 1
             else:
@@ -110,7 +110,7 @@ def main(_):
 
             parameter_num = np.sum([np.prod(v.shape.as_list()) for v in tf.trainable_variables()])
             log_print('Parameter number: {}'.format(parameter_num))
-            
+
             # training
             for epoch in range(start_epoch, args.max_epoch):
                 counter = 0
@@ -141,6 +141,7 @@ def main(_):
                     #print(counter, summary_val_interval, counter % summary_val_interval)
                     if counter % summary_val_interval == 0:
                         log_print("summary_val_interval now")
+                        # Random sample single batch data
                         batch = sample_test_data(val_dir, args.single_batch_size * cfg.GPU_USE_COUNT, multi_gpu_sum=cfg.GPU_USE_COUNT)
 
                         ret = model.validate_step(sess, batch, summary=True)
@@ -159,9 +160,9 @@ def main(_):
                         sys.exit(0)
 
                     batch_time = time.time()
-                
+
                 sess.run(model.epoch_add_op)
-                
+
                 model.saver.save(sess, os.path.join(save_model_dir, timestr), global_step=model.global_step)
 
                 # dump test data every 10 epochs
@@ -201,8 +202,6 @@ def main(_):
                     cmd_2 = os.path.join( args.output_path, str(epoch) )
                     cmd_3 = os.path.join( args.output_path, str(epoch), 'log' )
                     os.system( " ".join( [cmd_1, cmd_2, cmd_3] ) )
-
-
 
             log_print('train done. total epoch:{} iter:{}'.format(
                 epoch, model.global_step.eval()))

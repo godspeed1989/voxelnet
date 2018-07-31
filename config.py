@@ -18,9 +18,12 @@ __C = edict()
 cfg = __C
 
 # for dataset dir
-__C.USE_AUG_DATA = True
-__C.AUG_DATA_FOLDER = 'augment_nonground'
+__C.USE_AUGED_DATA = True
 __C.REMOVE_GROUND = True
+if __C.REMOVE_GROUND:
+    __C.AUG_DATA_FOLDER = 'augment_rm_ground'
+else:
+    __C.AUG_DATA_FOLDER = 'augment_data'
 
 __C.DATA_DIR = '/mine/KITTI_DAT'
 __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
@@ -42,15 +45,15 @@ if __C.DETECT_OBJ == 'Car':
     __C.Y_MAX = 40
     __C.X_MIN = 0
     __C.X_MAX = 70.4
-    __C.VOXEL_Z_SIZE = 0.4
+    __C.VOXEL_Z_SIZE = __C.Z_MAX - __C.Z_MIN # 0.4
     __C.VOXEL_Y_SIZE = 0.2
     __C.VOXEL_X_SIZE = 0.2
-    __C.GRID_Z_SIZE = int((__C.Z_MAX - __C.Z_MIN) / __C.VOXEL_Z_SIZE)
+    __C.GRID_Z_SIZE = 1  # int((__C.Z_MAX - __C.Z_MIN) / __C.VOXEL_Z_SIZE)
     __C.GRID_Y_SIZE = int((__C.Y_MAX - __C.Y_MIN) / __C.VOXEL_Y_SIZE)
     __C.GRID_X_SIZE = int((__C.X_MAX - __C.X_MIN) / __C.VOXEL_X_SIZE)
-    __C.VOXEL_POINT_COUNT = 35
-    __C.INPUT_WIDTH = int((__C.X_MAX - __C.X_MIN) / __C.VOXEL_X_SIZE)
-    __C.INPUT_HEIGHT = int((__C.Y_MAX - __C.Y_MIN) / __C.VOXEL_Y_SIZE)
+    __C.VOXEL_POINT_COUNT = 50
+    __C.INPUT_WIDTH = __C.GRID_X_SIZE
+    __C.INPUT_HEIGHT = __C.GRID_Y_SIZE
     __C.FEATURE_RATIO = 2
     __C.FEATURE_WIDTH = int(__C.INPUT_WIDTH / __C.FEATURE_RATIO)
     __C.FEATURE_HEIGHT = int(__C.INPUT_HEIGHT / __C.FEATURE_RATIO)

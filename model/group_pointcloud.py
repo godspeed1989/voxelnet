@@ -21,10 +21,10 @@ class VFELayer(object):
                 name='batch_norm', fused=True, _reuse=tf.AUTO_REUSE, _scope=scope)
 
     def apply(self, inputs, mask, training):
-        # [K, T, 7] tensordot [7, units] = [K, T, units]
+        # [K, T, F] tensordot [F, units] -> [K, T, units]
         pointwise = self.batch_norm.apply(self.dense.apply(inputs), training)
 
-        #n [K, 1, units]
+        # [K, 1, units]
         aggregated = tf.reduce_max(pointwise, axis=1, keepdims=True)
 
         # [K, T, units]
@@ -48,29 +48,29 @@ class FeatureNet(object):
 
         # scalar
         self.batch_size = batch_size
-        # [ΣK, 35/45, F]
-        self.feature_pl = tf.placeholder(
-            tf.float32, [None, cfg.VOXEL_POINT_COUNT, cfg.POINT_FEATURE_LEN], name='feature')
-        # [ΣK]
+        # [K, T, F]
+        self.feature_pl = tf.placeholder(tf.float32, [None, cfg.VOXEL_POINT_COUNT, cfg.POINT_FEATURE_LEN], name='feature')
+        # [K]
         self.number_pl = tf.placeholder(tf.int64, [None], name='number')
-        # [ΣK, 4], each row stores (batch, d, h, w)
-        self.coordinate_pl = tf.placeholder(
-            tf.int64, [None, 4], name='coordinate')
+        # [K, T, 1]
+        self.mask_pl = tf.placeholder(tf.bool, [None, cfg.VOXEL_POINT_COUNT, 1], name='mask')
+        # [K, 4], each row stores (batch, d, h, w)
+        self.coordinate_pl = tf.placeholder(tf.int64, [None, 4], name='coordinate')
 
         with tf.variable_scope(name, reuse=tf.AUTO_REUSE) as scope:
             self.vfe1 = VFELayer(32, 'VFE-1')
             self.vfe2 = VFELayer(128, 'VFE-2')
 
         # boolean mask [K, T, 2 * units]
-        mask = tf.not_equal(tf.reduce_max(
-            self.feature_pl, axis=2, keepdims=True), 0)
-        x = self.vfe1.apply(self.feature_pl, mask, self.training)
-        x = self.vfe2.apply(x, mask, self.training)
+        #mask = tf.not_equal(tf.reduce_max(
+        #    self.feature_pl, axis=2, keepdims=True), 0)
+        x = self.vfe1.apply(self.feature_pl, self.mask_pl, self.training)
+        x = self.vfe2.apply(x, self.mask_pl, self.training)
 
-        # [ΣK, 128]
+        # [K, 128]
         voxelwise = tf.reduce_max(x, axis=1)
 
         # car: [N * 10 * 400 * 352 * 128]
         # pedestrian/cyclist: [N * 10 * 200 * 240 * 128]
         self.outputs = tf.scatter_nd(
-            self.coordinate_pl, voxelwise, [self.batch_size, 10, cfg.INPUT_HEIGHT, cfg.INPUT_WIDTH, 128])
+            self.coordinate_pl, voxelwise, [self.batch_size, cfg.GRID_Z_SIZE, cfg.GRID_Y_SIZE, cfg.GRID_X_SIZE, 128])

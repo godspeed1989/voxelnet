@@ -12,9 +12,9 @@ small_addon_for_BCE = 1e-6
 
 
 class MiddleAndRPN:
-    def __init__(self, input, alpha=1.5, beta=1, sigma=3, training=True, name=''):
+    def __init__(self, input_data, alpha=1.5, beta=1, sigma=3, training=True, name=''):
         # scale = [batchsize, 10, 400/200, 352/240, 128] should be the output of feature learning network
-        self.input = input
+        self.input_data = input_data
         self.training = training
         # groundtruth(target) - each anchor box, represent as △x, △y, △z, △l, △w, △h, rotation
         self.targets = tf.placeholder(
@@ -30,17 +30,21 @@ class MiddleAndRPN:
             tf.float32, [None, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, 2])
         self.neg_equal_one_sum = tf.placeholder(tf.float32, [None, 1, 1, 1])
 
+        # ConvMD(M, Cin, Cout, k, (s), (p), input, training, ...)
         with tf.variable_scope('MiddleAndRPN_' + name):
             # convolutinal middle layers
-            temp_conv = ConvMD(3, 128, 64, 3, (2, 1, 1),
-                               (1, 1, 1), self.input, name='conv1')
-            temp_conv = ConvMD(3, 64, 64, 3, (1, 1, 1),
-                               (0, 1, 1), temp_conv, name='conv2')
-            temp_conv = ConvMD(3, 64, 64, 3, (2, 1, 1),
-                               (1, 1, 1), temp_conv, name='conv3')
+            temp_conv = self.input_data
+            batch_size = self.input_data.get_shape()[0]
+            if cfg.GRID_Z_SIZE >= 3:
+                temp_conv = ConvMD(3, 128, 64, 3, (2, 1, 1),
+                                (1, 1, 1), temp_conv, training=self.training, name='conv1')
+                temp_conv = ConvMD(3, 64, 64, 3, (1, 1, 1),
+                                (0, 1, 1), temp_conv, training=self.training, name='conv2')
+                temp_conv = ConvMD(3, 64, 64, 3, (2, 1, 1),
+                                (1, 1, 1), temp_conv, training=self.training, name='conv3')
+            # (N, D, H, W, C) -> (N, H, W, C, D)
             temp_conv = tf.transpose(temp_conv, perm=[0, 2, 3, 4, 1])
-            temp_conv = tf.reshape(
-                temp_conv, [-1, cfg.INPUT_HEIGHT, cfg.INPUT_WIDTH, 128])
+            temp_conv = tf.reshape(temp_conv, [batch_size, cfg.INPUT_HEIGHT, cfg.INPUT_WIDTH, -1])
 
             # rpn
             # block1:
@@ -102,11 +106,10 @@ class MiddleAndRPN:
 
             self.cls_pos_loss = (-self.pos_equal_one * tf.log(self.p_pos + small_addon_for_BCE)) / self.pos_equal_one_sum
             self.cls_neg_loss = (-self.neg_equal_one * tf.log(1 - self.p_pos + small_addon_for_BCE)) / self.neg_equal_one_sum
-            
+
             self.cls_loss = tf.reduce_sum( alpha * self.cls_pos_loss + beta * self.cls_neg_loss )
             self.cls_pos_loss_rec = tf.reduce_sum( self.cls_pos_loss )
             self.cls_neg_loss_rec = tf.reduce_sum( self.cls_neg_loss )
-
 
             self.reg_loss = smooth_l1(r_map * self.pos_equal_one_for_reg, self.targets *
                                       self.pos_equal_one_for_reg, sigma) / self.pos_equal_one_sum
@@ -132,7 +135,7 @@ def smooth_l1(deltas, targets, sigma=3.0):
     return smooth_l1
 
 
-def ConvMD(M, Cin, Cout, k, s, p, input, training=True, activation=True, bn=True, name='conv'):
+def ConvMD(M, Cin, Cout, k, s, p, input, training, activation=True, bn=True, name='conv'):
     temp_p = np.array(p)
     temp_p = np.lib.pad(temp_p, (1, 1), 'constant', constant_values=(0, 0))
     with tf.variable_scope(name) as scope:

@@ -45,6 +45,7 @@ class RPN3D(object):
         self.vox_feature = []
         self.vox_number = []
         self.vox_coordinate = []
+        self.vox_mask = []
         self.targets = []
         self.pos_equal_one = []
         self.pos_equal_one_sum = []
@@ -66,13 +67,15 @@ class RPN3D(object):
                         feature = FeatureNet(training=self.is_train, batch_size=self.single_batch_size)
                     elif cfg.FEATURE_NET_TYPE == 'FeatureNetSIFT':
                         feature = FeatureNetSIFT(training=self.is_train, batch_size=self.single_batch_size)
-                    rpn = MiddleAndRPN(
-                        input=feature.outputs, alpha=self.alpha, beta=self.beta, training=self.is_train)
+                    #
+                    rpn = MiddleAndRPN(input_data=feature.outputs, alpha=self.alpha, beta=self.beta, training=self.is_train)
+                    #
                     tf.get_variable_scope().reuse_variables()
                     # input
                     self.vox_feature.append(feature.feature_pl)
                     self.vox_number.append(feature.number_pl)
                     self.vox_coordinate.append(feature.coordinate_pl)
+                    self.vox_mask.append(feature.mask_pl)
                     self.targets.append(rpn.targets)
                     self.pos_equal_one.append(rpn.pos_equal_one)
                     self.pos_equal_one_sum.append(rpn.pos_equal_one_sum)
@@ -176,6 +179,8 @@ class RPN3D(object):
         vox_feature = data[2]
         vox_number = data[3]
         vox_coordinate = data[4]
+        vox_mask = data[5]
+
         print('train', tag)
         pos_equal_one, neg_equal_one, targets = cal_rpn_target(
             label, self.rpn_output_shape, self.anchors, cls=cfg.DETECT_OBJ, coordinate='lidar')
@@ -192,6 +197,7 @@ class RPN3D(object):
             input_feed[self.vox_feature[idx]] = vox_feature[idx]
             input_feed[self.vox_number[idx]] = vox_number[idx]
             input_feed[self.vox_coordinate[idx]] = vox_coordinate[idx]
+            input_feed[self.vox_mask[idx]] = vox_mask[idx]
             input_feed[self.targets[idx]] = targets[idx * self.single_batch_size:(idx + 1) * self.single_batch_size]
             input_feed[self.pos_equal_one[idx]] = pos_equal_one[idx * self.single_batch_size:(idx + 1) * self.single_batch_size]
             input_feed[self.pos_equal_one_sum[idx]] = pos_equal_one_sum[idx * self.single_batch_size:(idx + 1) * self.single_batch_size]
@@ -220,6 +226,8 @@ class RPN3D(object):
         vox_feature = data[2]
         vox_number = data[3]
         vox_coordinate = data[4]
+        vox_mask = data[5]
+
         print('valid', tag)
         pos_equal_one, neg_equal_one, targets = cal_rpn_target(
             label, self.rpn_output_shape, self.anchors)
@@ -236,6 +244,7 @@ class RPN3D(object):
             input_feed[self.vox_feature[idx]] = vox_feature[idx]
             input_feed[self.vox_number[idx]] = vox_number[idx]
             input_feed[self.vox_coordinate[idx]] = vox_coordinate[idx]
+            input_feed[self.vox_mask[idx]] = vox_mask[idx]
             input_feed[self.targets[idx]] = targets[idx * self.single_batch_size:(idx + 1) * self.single_batch_size]
             input_feed[self.pos_equal_one[idx]] = pos_equal_one[idx * self.single_batch_size:(idx + 1) * self.single_batch_size]
             input_feed[self.pos_equal_one_sum[idx]] = pos_equal_one_sum[idx * self.single_batch_size:(idx + 1) * self.single_batch_size]
@@ -266,8 +275,9 @@ class RPN3D(object):
         vox_feature = data[2]
         vox_number = data[3]
         vox_coordinate = data[4]
-        img = data[5]
-        lidar = data[6]
+        vox_mask = data[5]
+        img = data[6]
+        lidar = data[7]
 
         if summary or vis:
             batch_gt_boxes3d = label_to_gt_box3d(
@@ -279,6 +289,7 @@ class RPN3D(object):
             input_feed[self.vox_feature[idx]] = vox_feature[idx]
             input_feed[self.vox_number[idx]] = vox_number[idx]
             input_feed[self.vox_coordinate[idx]] = vox_coordinate[idx]
+            input_feed[self.vox_mask[idx]] = vox_mask[idx]
 
         output_feed = [self.prob_output, self.delta_output]
         probs, deltas = session.run(output_feed, input_feed)
@@ -319,18 +330,18 @@ class RPN3D(object):
             # only summry 1 in a batch
             cur_tag = tag[0]
             P, Tr, R = load_calib( os.path.join( cfg.CALIB_DIR, cur_tag + '.txt' ) )
-            
+
             front_image = draw_lidar_box3d_on_image(img[0], ret_box3d[0], ret_score[0],
                                                     batch_gt_boxes3d[0], P2=P, T_VELO_2_CAM=Tr, R_RECT_0=R)
-            
+
             bird_view = lidar_to_bird_view_img(
                 lidar[0], factor=cfg.BV_LOG_FACTOR)
-                
+
             bird_view = draw_lidar_box3d_on_birdview(bird_view, ret_box3d[0], ret_score[0],
                                                      batch_gt_boxes3d[0], factor=cfg.BV_LOG_FACTOR, P2=P, T_VELO_2_CAM=Tr, R_RECT_0=R)
-            
+
             heatmap = colorize(probs[0, ...], cfg.BV_LOG_FACTOR)
-        
+
             ret_summary = session.run(self.predict_summary, {
                 self.rgb: front_image[np.newaxis, ...],
                 self.bv: bird_view[np.newaxis, ...],
@@ -338,28 +349,28 @@ class RPN3D(object):
             })
 
             return tag, ret_box3d_score, ret_summary
-        
+
         if vis:
             front_images, bird_views, heatmaps = [], [], []
             for i in range(len(img)):
                 cur_tag = tag[i]
                 P, Tr, R = load_calib( os.path.join( cfg.CALIB_DIR, cur_tag + '.txt' ) )
-                
+
                 front_image = draw_lidar_box3d_on_image(img[i], ret_box3d[i], ret_score[i],
                                                  batch_gt_boxes3d[i], P2=P, T_VELO_2_CAM=Tr, R_RECT_0=R)
-                                                 
+
                 bird_view = lidar_to_bird_view_img(
                                                  lidar[i], factor=cfg.BV_LOG_FACTOR)
-                                                 
+
                 bird_view = draw_lidar_box3d_on_birdview(bird_view, ret_box3d[i], ret_score[i],
                                                  batch_gt_boxes3d[i], factor=cfg.BV_LOG_FACTOR, P2=P, T_VELO_2_CAM=Tr, R_RECT_0=R)
-                
+
                 heatmap = colorize(probs[i, ...], cfg.BV_LOG_FACTOR)
-                
+
                 front_images.append(front_image)
                 bird_views.append(bird_view)
                 heatmaps.append(heatmap)
-            
+
             return tag, ret_box3d_score, front_images, bird_views, heatmaps
 
         return tag, ret_box3d_score
