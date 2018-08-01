@@ -9,6 +9,7 @@ from utils.colorize import *
 from config import cfg
 from model.group_pointcloud import FeatureNet
 from model.group_pointcloud_sift import FeatureNetSIFT
+from model.group_pointcloud_pntnet import FeatureNet_PntNet
 from model.rpn import MiddleAndRPN
 
 
@@ -67,6 +68,8 @@ class RPN3D(object):
                         feature = FeatureNet(training=self.is_train, batch_size=self.single_batch_size)
                     elif cfg.FEATURE_NET_TYPE == 'FeatureNetSIFT':
                         feature = FeatureNetSIFT(training=self.is_train, batch_size=self.single_batch_size)
+                    elif cfg.FEATURE_NET_TYPE == 'FeatureNet_PntNet':
+                        feature = FeatureNet_PntNet(training=self.is_train, batch_size=self.single_batch_size)
                     #
                     rpn = MiddleAndRPN(input_data=feature.outputs, alpha=self.alpha, beta=self.beta, training=self.is_train)
                     #
@@ -184,12 +187,11 @@ class RPN3D(object):
         print('train', tag)
         pos_equal_one, neg_equal_one, targets = cal_rpn_target(
             label, self.rpn_output_shape, self.anchors, cls=cfg.DETECT_OBJ, coordinate='lidar')
-        pos_equal_one_for_reg = np.concatenate(
-            [np.tile(pos_equal_one[..., [0]], 7), np.tile(pos_equal_one[..., [1]], 7)], axis=-1)
-        pos_equal_one_sum = np.clip(np.sum(pos_equal_one, axis=(
-            1, 2, 3)).reshape(-1, 1, 1, 1), a_min=1, a_max=None)
-        neg_equal_one_sum = np.clip(np.sum(neg_equal_one, axis=(
-            1, 2, 3)).reshape(-1, 1, 1, 1), a_min=1, a_max=None)
+        # (N, H, W, 2) -> (N, H, W, 14)
+        pos_equal_one_for_reg = np.concatenate([np.tile(pos_equal_one[..., [0]], 7), np.tile(pos_equal_one[..., [1]], 7)], axis=-1)
+        # every batch sum
+        pos_equal_one_sum = np.clip(np.sum(pos_equal_one, axis=(1, 2, 3)).reshape(-1, 1, 1, 1), a_min=1, a_max=None)
+        neg_equal_one_sum = np.clip(np.sum(neg_equal_one, axis=(1, 2, 3)).reshape(-1, 1, 1, 1), a_min=1, a_max=None)
 
         input_feed = {}
         input_feed[self.is_train] = True
@@ -404,5 +406,3 @@ def average_gradients(tower_grads):
 
 if __name__ == '__main__':
     pass
-
-

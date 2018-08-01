@@ -611,9 +611,8 @@ def cal_rpn_target(labels, feature_map_shape, anchors, cls='Car', coordinate='li
         # find anchor iou > cfg.XXX_POS_IOU
         id_pos, id_pos_gt = np.where(iou > cfg.RPN_POS_IOU)
 
-        # find anchor iou < cfg.XXX_NEG_IOU
-        id_neg = np.where(np.sum(iou < cfg.RPN_NEG_IOU,
-                                 axis=1) == iou.shape[1])[0]
+        # find anchor iou < cfg.XXX_NEG_IOU   格子里的每个anchor均为负
+        id_neg = np.where(np.sum(iou < cfg.RPN_NEG_IOU, axis=1) == iou.shape[1])[0]
 
         id_pos = np.concatenate([id_pos, id_highest])
         id_pos_gt = np.concatenate([id_pos_gt, id_highest_gt])

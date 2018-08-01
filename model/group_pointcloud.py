@@ -70,7 +70,5 @@ class FeatureNet(object):
         # [K, 128]
         voxelwise = tf.reduce_max(x, axis=1)
 
-        # car: [N * 10 * 400 * 352 * 128]
-        # pedestrian/cyclist: [N * 10 * 200 * 240 * 128]
         self.outputs = tf.scatter_nd(
             self.coordinate_pl, voxelwise, [self.batch_size, cfg.GRID_Z_SIZE, cfg.GRID_Y_SIZE, cfg.GRID_X_SIZE, 128])

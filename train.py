@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # -*- coding:UTF-8 -*-
-
-
 import os
 import time
 import sys
@@ -41,7 +39,7 @@ parser.add_argument('--output-path', type=str, nargs='?',
                     default='./predictions', help='results output dir')
 parser.add_argument('-r', '--restore', type=bool, nargs='?', default=False,
                     help='set the flag to True if restore')
-parser.add_argument('-v', '--vis', type=bool, nargs='?', default=True,
+parser.add_argument('-v', '--vis', type=bool, nargs='?', default=False,
                     help='set the flag to True if dumping visualizations')
 args = parser.parse_args()
 
@@ -50,11 +48,12 @@ if cfg.USE_AUGED_DATA:
     AUG_DATA = False
     HAS_VOXEL = True
     train_dir = os.path.join(cfg.DATA_DIR, 'training', cfg.AUG_DATA_FOLDER)
+    val_dir = os.path.join(cfg.DATA_DIR, 'validation', cfg.AUG_DATA_FOLDER)
 else:
     AUG_DATA = True
     HAS_VOXEL = False
     train_dir = os.path.join(cfg.DATA_DIR, 'training')
-val_dir = os.path.join(cfg.DATA_DIR, 'validation')
+    val_dir = os.path.join(cfg.DATA_DIR, 'validation')
 log_dir = os.path.join('./log', args.tag)
 save_model_dir = os.path.join('./save_model', args.tag)
 os.makedirs(log_dir, exist_ok=True)
@@ -149,7 +148,7 @@ def main(_):
                         log_print('validation: loss: {:.4f} reg_loss: {:.4f} cls_loss: {:.4f} '.format(ret[0], ret[1], ret[2]))
 
                         try:
-                            ret = model.predict_step(sess, batch, summary=True)
+                        ret = model.predict_step(sess, batch, summary=True)
                             summary_writer.add_summary(ret[-1], global_counter)
                         except:
                             log_print('prediction skipped due to error', 'red')

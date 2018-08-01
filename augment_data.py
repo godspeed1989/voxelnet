@@ -8,12 +8,13 @@ import glob
 from config import cfg
 from utils.data_aug import aug_data
 
-object_dir = '/mine/KITTI_DAT/training'
+object_dir = '/mine/KITTI_DAT/validation'
 output_dir = cfg.AUG_DATA_FOLDER
+augment_pc = False
 
 def worker(tag):
     try:
-        new_tag, rgb, lidar, voxel_dict, label = aug_data(tag, object_dir)
+        new_tag, rgb, lidar, voxel_dict, label = aug_data(tag, object_dir, aug_pc=augment_pc)
     except:
         print('ERROR aug {}'.format(tag))
         return

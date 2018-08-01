@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # -*- coding:UTF-8 -*-
-
-
 import tensorflow as tf
 import numpy as np
 
@@ -93,17 +91,18 @@ class MiddleAndRPN:
 
             # final:
             temp_conv = tf.concat([deconv3, deconv2, deconv1], -1)
-            # Probability score map, scale = [None, 200/100, 176/120, 2]
-            p_map = ConvMD(2, 768, 2, 1, (1, 1), (0, 0), temp_conv,
-                           training=self.training, activation=False, bn=False, name='conv20')
-            # Regression(residual) map, scale = [None, 200/100, 176/120, 14]
-            r_map = ConvMD(2, 768, 14, 1, (1, 1), (0, 0),
-                           temp_conv, training=self.training, activation=False, bn=False, name='conv21')
-            # softmax output for positive anchor and negative anchor, scale = [None, 200/100, 176/120, 1]
-            self.p_pos = tf.sigmoid(p_map)
-            #self.p_pos = tf.nn.softmax(p_map, dim=3)
             self.output_shape = [cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH]
 
+            # Probability score map, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, 2], 2 for two kinds anchor
+            p_map = ConvMD(2, 768, 2, k=1, s=(1, 1), p=(0, 0),
+                           input=temp_conv, training=self.training, activation=False, bn=False, name='conv20')
+            # Regression(residual) map, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, 14]
+            r_map = ConvMD(2, 768, 14, 1, (1, 1), (0, 0),
+                           temp_conv, training=self.training, activation=False, bn=False, name='conv21')
+            # softmax output for positive anchor and negative anchor, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, 2]
+            self.p_pos = tf.nn.softmax(p_map, axis=3)
+
+            # ------- classification loss --------
             self.cls_pos_loss = (-self.pos_equal_one * tf.log(self.p_pos + small_addon_for_BCE)) / self.pos_equal_one_sum
             self.cls_neg_loss = (-self.neg_equal_one * tf.log(1 - self.p_pos + small_addon_for_BCE)) / self.neg_equal_one_sum
 
@@ -111,8 +110,9 @@ class MiddleAndRPN:
             self.cls_pos_loss_rec = tf.reduce_sum( self.cls_pos_loss )
             self.cls_neg_loss_rec = tf.reduce_sum( self.cls_neg_loss )
 
-            self.reg_loss = smooth_l1(r_map * self.pos_equal_one_for_reg, self.targets *
-                                      self.pos_equal_one_for_reg, sigma) / self.pos_equal_one_sum
+            # -------- regression loss --------
+            self.reg_loss = smooth_l1(r_map * self.pos_equal_one_for_reg, self.targets * self.pos_equal_one_for_reg, sigma)
+            self.reg_loss = self.reg_loss / self.pos_equal_one_sum
             self.reg_loss = tf.reduce_sum(self.reg_loss)
 
             self.loss = tf.reduce_sum(self.cls_loss + self.reg_loss)

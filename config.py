@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # -*- coding:UTF-8 -*-
-
-
 """VoxelNet config system.
 """
 
@@ -28,8 +26,8 @@ else:
 __C.DATA_DIR = '/mine/KITTI_DAT'
 __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 
-# select FeatureNet or FeatureNetSIFT
-__C.FEATURE_NET_TYPE = 'FeatureNet'
+# select FeatureNet / FeatureNetSIFT / FeatureNet_PntNet
+__C.FEATURE_NET_TYPE = 'FeatureNet_PntNet'
 
 # for gpu allocation
 __C.GPU_AVAILABLE = '0'
