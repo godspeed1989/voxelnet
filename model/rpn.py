@@ -100,7 +100,8 @@ class MiddleAndRPN:
             r_map = ConvMD(2, 768, 14, 1, (1, 1), (0, 0),
                            temp_conv, training=self.training, activation=False, bn=False, name='conv21')
             # softmax output for positive anchor and negative anchor, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, 2]
-            self.p_pos = tf.nn.softmax(p_map, axis=3)
+            # just for one class now, use sigmoid, 2 for two kinds anchor
+            self.p_pos = tf.sigmoid(p_map)
 
             # ------- classification loss --------
             self.cls_pos_loss = (-self.pos_equal_one * tf.log(self.p_pos + small_addon_for_BCE)) / self.pos_equal_one_sum
