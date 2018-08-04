@@ -8,7 +8,8 @@ import shapely.affinity
 import math
 
 from config import cfg
-from utils.box_overlaps import *
+from utils.box_overlaps import bbox_overlaps
+from utils.rotbox_cuda.rbbox_overlaps import py_rbbox_overlaps_3d
 
 
 #-- util function to load calib matrices
@@ -586,21 +587,28 @@ def cal_rpn_target(labels, feature_map_shape, anchors, cls='Car', coordinate='li
     targets = np.zeros((batch_size, *feature_map_shape, 14))
 
     for batch_id in range(batch_size):
-        # BOTTLENECK
-        anchors_standup_2d = anchor_to_standup_box2d(
-            anchors_reshaped[:, [0, 1, 4, 5]])
-        # BOTTLENECK
-        gt_standup_2d = corner_to_standup_box2d(center_to_corner_box2d(
-            batch_gt_boxes3d[batch_id][:, [0, 1, 4, 5, 6]], coordinate=coordinate))
+        if cfg.IOU_TYPE == '2d_standup':
+            # BOTTLENECK
+            anchors_standup_2d = anchor_to_standup_box2d(
+                anchors_reshaped[:, [0, 1, 4, 5]])
+            # BOTTLENECK
+            gt_standup_2d = corner_to_standup_box2d(center_to_corner_box2d(
+                batch_gt_boxes3d[batch_id][:, [0, 1, 4, 5, 6]], coordinate=coordinate))
 
-        iou = bbox_overlaps(
-            np.ascontiguousarray(anchors_standup_2d).astype(np.float32),
-            np.ascontiguousarray(gt_standup_2d).astype(np.float32),
-        )
-        # iou = cal_box3d_iou(
-        #     anchors_reshaped,
-        #     batch_gt_boxes3d[batch_id]
-        # )
+            iou = bbox_overlaps(
+                np.ascontiguousarray(anchors_standup_2d).astype(np.float32),
+                np.ascontiguousarray(gt_standup_2d).astype(np.float32),
+            )
+        elif cfg.IOU_TYPE == '3d_cv2':  # very slow.....
+            iou = cal_box3d_iou(
+                anchors_reshaped,
+                batch_gt_boxes3d[batch_id]
+            )
+        elif cfg.IOU_TYPE == '3d_rbbox':
+            iou = py_rbbox_overlaps_3d(
+                np.ascontiguousarray(anchors_standup_2d).astype(np.float32),
+                np.ascontiguousarray(gt_standup_2d).astype(np.float32),
+            )
 
         # find anchor with highest iou(iou should also > 0)
         id_highest = np.argmax(iou.T, axis=1)
@@ -767,14 +775,15 @@ def cal_z_intersect(cz1, h1, cz2, h2):
         return 0
     elif b2z1 <= b1z1 <= b2z2:
         if b1z2 <= b2z2:
-            return h1 / h2
+            return h1
         else:
-            return (b2z2 - b1z1) / (b1z2 - b2z1)
+            return b2z2 - b1z1
     elif b1z1 < b2z1 < b1z2:
         if b2z2 <= b1z2:
-            return h2 / h1
+            return h2
         else:
-            return (b1z2 - b2z1) / (b2z2 - b1z1)
+            return b1z2 - b2z1
+    return 0
 
 
 def cal_iou3d(box1, box2, T_VELO_2_CAM=None, R_RECT_0=None):

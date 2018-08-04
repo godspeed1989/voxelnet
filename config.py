@@ -175,6 +175,8 @@ __C.RPN_NMS_POST_TOPK = 20
 __C.RPN_NMS_THRESH = 0.1
 __C.RPN_SCORE_THRESH = 0.96
 
+# cal IoU method: 2d_standup / 3d_cv2 / 3d_rbbox
+__C.IOU_TYPE = '3d_rbbox'
 
 # utils
 __C.CORNER2CENTER_AVG = True  # average version or max version
