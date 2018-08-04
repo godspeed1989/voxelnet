@@ -587,7 +587,11 @@ def cal_rpn_target(labels, feature_map_shape, anchors, cls='Car', coordinate='li
     targets = np.zeros((batch_size, *feature_map_shape, 14))
 
     for batch_id in range(batch_size):
-        if cfg.IOU_TYPE == '2d_standup':
+        if len(batch_gt_boxes3d[batch_id]) == 0: # No object
+            N1 = len(anchors_reshaped)
+            N2 = len(batch_gt_boxes3d[batch_id]) # 0
+            iou = np.zeros((N1, N2), dtype=np.float32)
+        elif cfg.IOU_TYPE == '2d_standup':
             # BOTTLENECK
             anchors_standup_2d = anchor_to_standup_box2d(
                 anchors_reshaped[:, [0, 1, 4, 5]])
