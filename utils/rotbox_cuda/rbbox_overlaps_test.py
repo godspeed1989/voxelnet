@@ -112,11 +112,19 @@ if __name__ == "__main__":
             [60.0, 60.0, 0, 1, 100.0,  100.0, 0.0], # 4 pts
             [60.0, 80.0, 0, 1, 100.0,  100.0, 0.0], # 4 pts
             [60.0, 60.0, 0, 1, 80.0,   80.0, 0.0], # 4 pts
+            [50.0, 50.0, 0, 1, 200.0,  50.0, 45.0], # 6 edges
+            [200.0, 200.0, 0, 1, 100.0,  100.0, 0], # no intersection
+            [60.0, 60.0, 0, 1, 100.0,  100.0, 0.0], # 4 pts
+            [50.0, 50.0, 0, 1, 100.0,  100.0, 45.0], # 8 pts
             ], dtype = np.float32)
-    o3 = cal_rbbox3d_iou(boxes_3d, boxes_3d)
-    print(o3)
-    print('------')
-    o4 = py_rbbox_overlaps_3d(np.ascontiguousarray(boxes_3d, dtype=np.float32),
-                              np.ascontiguousarray(boxes_3d, dtype=np.float32))
-    print(o4)
-    print(np.allclose(o3, o4))
+    for i in range(10000):
+        cnt = boxes_3d.shape[0]
+        a, b = np.random.randint(cnt), np.random.randint(cnt)
+        s = a if a < b else b
+        e = a if a > b else b
+        e = e + 1
+        o3 = cal_rbbox3d_iou(boxes_3d[s:e], boxes_3d)
+        o4 = py_rbbox_overlaps_3d(np.ascontiguousarray(boxes_3d[s:e], dtype=np.float32),
+                                np.ascontiguousarray(boxes_3d, dtype=np.float32))
+        assert np.allclose(o3, o4)
+    print(True)

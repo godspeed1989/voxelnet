@@ -3,7 +3,7 @@ cimport numpy as np
 
 cdef extern from "rbbox_overlaps.hpp":
     void _overlaps(np.float32_t*, np.float32_t*, np.float32_t*, int, int, int)
-    void _overlaps_3d(float* overlaps,const float* boxes,const float* query_boxes, int n, int k, int device_id)
+    void _overlaps_3d(np.float32_t*, np.float32_t*, np.float32_t*, int, int, int)
 
 def py_rbbox_overlaps (np.ndarray[np.float32_t, ndim=2] boxes, np.ndarray[np.float32_t, ndim=2] query_boxes, np.int32_t device_id=0):
     cdef int N = boxes.shape[0]
