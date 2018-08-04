@@ -606,8 +606,8 @@ def cal_rpn_target(labels, feature_map_shape, anchors, cls='Car', coordinate='li
             )
         elif cfg.IOU_TYPE == '3d_rbbox':
             iou = py_rbbox_overlaps_3d(
-                np.ascontiguousarray(anchors_standup_2d).astype(np.float32),
-                np.ascontiguousarray(gt_standup_2d).astype(np.float32),
+                np.ascontiguousarray(anchors_reshaped).astype(np.float32),
+                np.ascontiguousarray(batch_gt_boxes3d[batch_id]).astype(np.float32),
             )
 
         # find anchor with highest iou(iou should also > 0)
