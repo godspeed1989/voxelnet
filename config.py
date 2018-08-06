@@ -34,6 +34,8 @@ __C.GPU_AVAILABLE = '0'
 __C.GPU_USE_COUNT = len(__C.GPU_AVAILABLE.split(','))
 __C.GPU_MEMORY_FRACTION = 1
 
+__C.SUMMART_ALL_VARS = False
+
 # selected object
 __C.DETECT_OBJ = 'Car'  # Pedestrian/Cyclist
 if __C.DETECT_OBJ == 'Car':

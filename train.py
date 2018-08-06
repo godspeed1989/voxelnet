@@ -17,9 +17,11 @@ from train_hook import check_if_should_pause
 from termcolor import cprint
 
 log_f = None
-def log_print(s, color='green'):
+def log_print(s, color='green', write=True):
     cprint(s, color, attrs=['bold'])
-    log_f.write(s + '\n')
+    if write:
+        log_f.write(s + '\n')
+    log_f.flush()
 
 
 parser = argparse.ArgumentParser(description='training')
@@ -64,6 +66,7 @@ def main(_):
     global log_f
     timestr = time.strftime("%b-%d_%H-%M-%S", time.localtime())
     log_f = open('log/train_{}.txt'.format(timestr), 'w')
+    log_print(str(cfg))
     # TODO: split file support
     with tf.Graph().as_default():
         global save_model_dir
@@ -130,7 +133,7 @@ def main(_):
                     batch_time = time.time() - batch_time
 
                     log_print('train: {} @ epoch:{}/{} loss: {:.4f} reg_loss: {:.4f} cls_loss: {:.4f} cls_pos_loss: {:.4f} cls_neg_loss: {:.4f} forward time: {:.4f} batch time: {:.4f}'.
-                                format(counter,epoch, args.max_epoch, ret[0], ret[1], ret[2], ret[3], ret[4], forward_time, batch_time))
+                                format(counter,epoch, args.max_epoch, ret[0], ret[1], ret[2], ret[3], ret[4], forward_time, batch_time), write=is_summary)
 
                     #print(counter, summary_interval, counter % summary_interval)
                     if counter % summary_interval == 0:

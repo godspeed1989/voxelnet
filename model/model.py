@@ -145,14 +145,16 @@ class RPN3D(object):
         # summary and saver
         self.saver = tf.train.Saver(max_to_keep=10, pad_step_number=True, keep_checkpoint_every_n_hours=1.0)
 
-        self.train_summary = tf.summary.merge([
+        train_summary_list = [
             tf.summary.scalar('train/loss', self.loss),
             tf.summary.scalar('train/reg_loss', self.reg_loss),
             tf.summary.scalar('train/cls_loss', self.cls_loss),
             tf.summary.scalar('train/cls_pos_loss', self.cls_pos_loss),
-            tf.summary.scalar('train/cls_neg_loss', self.cls_neg_loss),
-            *[tf.summary.histogram(each.name, each) for each in self.vars + self.params]
-        ])
+            tf.summary.scalar('train/cls_neg_loss', self.cls_neg_loss)
+        ]
+        if cfg.SUMMART_ALL_VARS:
+            train_summary_list.append(*[tf.summary.histogram(each.name, each) for each in self.vars + self.params])
+        self.train_summary = tf.summary.merge(train_summary_list)
 
         self.validate_summary = tf.summary.merge([
             tf.summary.scalar('validate/loss', self.loss),
