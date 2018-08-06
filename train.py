@@ -144,7 +144,8 @@ def main(_):
                     if counter % summary_val_interval == 0:
                         log_print("summary_val_interval now")
                         # Random sample single batch data
-                        batch = sample_test_data(val_dir, args.single_batch_size * cfg.GPU_USE_COUNT, multi_gpu_sum=cfg.GPU_USE_COUNT)
+                        batch = sample_test_data(val_dir, args.single_batch_size * cfg.GPU_USE_COUNT,
+                                                 has_voxel=HAS_VOXEL, multi_gpu_sum=cfg.GPU_USE_COUNT)
 
                         ret = model.validate_step(sess, batch, summary=True)
                         summary_writer.add_summary(ret[-1], global_counter)
@@ -175,7 +176,7 @@ def main(_):
                     if args.vis:
                         os.makedirs(os.path.join(args.output_path, str(epoch), 'vis'), exist_ok=True)
 
-                    for batch in iterate_data(val_dir, shuffle=False, aug=False, has_voxel=False, is_testset=False,
+                    for batch in iterate_data(val_dir, shuffle=False, aug=False, has_voxel=HAS_VOXEL, is_testset=False,
                                               batch_size=args.single_batch_size * cfg.GPU_USE_COUNT, multi_gpu_sum=cfg.GPU_USE_COUNT):
                         if args.vis:
                             tags, results, front_images, bird_views, heatmaps = model.predict_step(sess, batch, summary=False, vis=True)

@@ -117,17 +117,23 @@ def iterate_data(data_dir, has_voxel=False, shuffle=False, aug=False,
         yield ret
 
 # Random sample single batch data
-def sample_test_data(data_dir, batch_size=1, multi_gpu_sum=1):
+def sample_test_data(data_dir, batch_size=1, has_voxel=False, multi_gpu_sum=1):
     f_rgb = glob.glob(os.path.join(data_dir, 'image_2', '*.png'))
     f_lidar = glob.glob(os.path.join(data_dir, 'velodyne', '*.bin'))
     f_label = glob.glob(os.path.join(data_dir, 'label_2', '*.txt'))
+    if has_voxel:
+        f_voxel = glob.glob(os.path.join(data_dir, 'voxel', '*.npz'))
+        f_voxel.sort()
+    else:
+        f_voxel = None
     f_rgb.sort()
     f_lidar.sort()
     f_label.sort()
-
     data_tag = [name.split('/')[-1].split('.')[-2] for name in f_rgb]
 
-    assert(len(data_tag) == len(f_rgb) == len(f_lidar)), "dataset folder is not correct"
+    assert len(data_tag) != 0, "dataset folder is not correct"
+    assert len(data_tag) == len(f_rgb) == len(f_lidar) == len(f_label), "dataset folder is not correct"
+    if has_voxel: assert len(f_voxel) == len(f_label), "dataset folder is not correct"
 
     nums = len(f_rgb)
 

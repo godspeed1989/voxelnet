@@ -17,7 +17,7 @@ cfg = __C
 
 # for dataset dir
 __C.USE_AUGED_DATA = True
-__C.REMOVE_GROUND = True
+__C.REMOVE_GROUND = False
 if __C.REMOVE_GROUND:
     __C.AUG_DATA_FOLDER = 'augment_rm_ground'
 else:

@@ -8,10 +8,12 @@ import glob
 from config import cfg
 from utils.data_aug import aug_data
 
-object_dir = '/mine/KITTI_DAT/validation'
+object_dirs = ['/mine/KITTI_DAT/training',
+               '/mine/KITTI_DAT/validation']
 output_dir = cfg.AUG_DATA_FOLDER
 augment_pc = False
 
+object_dir = None
 def worker(tag):
     try:
         new_tag, rgb, lidar, voxel_dict, label = aug_data(tag, object_dir, aug_pc=augment_pc)
@@ -28,7 +30,8 @@ def worker(tag):
         for line in label:
             f.write(line)
 
-def main(args):
+def main(args, obj_dir):
+    object_dir = obj_dir
     fl = glob.glob(os.path.join(object_dir, 'label_2', '*.txt'))
     candidate = [f.split('/')[-1].split('.')[0] for f in fl]
     print('generate {} tags'.format(len(candidate)))
@@ -40,10 +43,13 @@ def main(args):
 
     pool = mp.Pool(args.num_workers)
     pool.map(worker, candidate)
+    pool.close()
+    pool.join()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('-n', '--num-workers', type=int, default=6)
     args = parser.parse_args()
 
-    main(args)
+    for obj_dir in object_dirs:
+        main(args, obj_dir)
