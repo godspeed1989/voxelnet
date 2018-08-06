@@ -8,13 +8,15 @@ import glob
 from config import cfg
 from utils.data_aug import aug_data
 
-object_dirs = ['/mine/KITTI_DAT/training',
-               '/mine/KITTI_DAT/validation']
+object_dirs = [('/mine/KITTI_DAT/training', True),
+               ('/mine/KITTI_DAT/validation', False)]
 output_dir = cfg.AUG_DATA_FOLDER
-augment_pc = False
 
 object_dir = None
+augment_pc = None
 def worker(tag):
+    global object_dir
+    global augment_pc
     try:
         new_tag, rgb, lidar, voxel_dict, label = aug_data(tag, object_dir, aug_pc=augment_pc)
     except:
@@ -31,7 +33,10 @@ def worker(tag):
             f.write(line)
 
 def main(args, obj_dir):
-    object_dir = obj_dir
+    global object_dir
+    global augment_pc
+    object_dir = obj_dir[0]
+    augment_pc = obj_dir[1]
     fl = glob.glob(os.path.join(object_dir, 'label_2', '*.txt'))
     candidate = [f.split('/')[-1].split('.')[0] for f in fl]
     print('generate {} tags'.format(len(candidate)))
@@ -52,4 +57,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     for obj_dir in object_dirs:
+        print(obj_dir)
         main(args, obj_dir)

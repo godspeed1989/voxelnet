@@ -87,6 +87,8 @@ def process_pointcloud(tag, lidar, cls=cfg.DETECT_OBJ):
 
     if cfg.REMOVE_GROUND:
         _, point_cloud = filter_ground(lidar)
+    else:
+        point_cloud = lidar
     assert point_cloud.shape[0], 'ERROR size {}'.format(tag)
 
     shifted_coord = point_cloud[:, :3] - lidar_coord
