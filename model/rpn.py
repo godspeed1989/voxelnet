@@ -11,21 +11,21 @@ small_addon_for_BCE = 1e-6
 
 class MiddleAndRPN:
     def __init__(self, input_data, alpha=1.5, beta=1, sigma=3, training=True, name=''):
-        # scale = [batchsize, 10, 400/200, 352/240, 128] should be the output of feature learning network
+        # scale should be the output of feature learning network
         self.input_data = input_data
         self.training = training
         # groundtruth(target) - each anchor box, represent as △x, △y, △z, △l, △w, △h, rotation
         self.targets = tf.placeholder(
-            tf.float32, [None, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, 14])
-        # postive anchors equal to one and others equal to zero(2 anchors in 1 position)
+            tf.float32, [None, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, cfg.ANCHOR_TYPES * 7])
+        # postive anchors equal to one and others equal to zero
         self.pos_equal_one = tf.placeholder(
-            tf.float32, [None, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, 2])
+            tf.float32, [None, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, cfg.ANCHOR_TYPES])
         self.pos_equal_one_sum = tf.placeholder(tf.float32, [None, 1, 1, 1])
         self.pos_equal_one_for_reg = tf.placeholder(
-            tf.float32, [None, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, 14])
+            tf.float32, [None, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, cfg.ANCHOR_TYPES * 7])
         # negative anchors equal to one and others equal to zero
         self.neg_equal_one = tf.placeholder(
-            tf.float32, [None, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, 2])
+            tf.float32, [None, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, cfg.ANCHOR_TYPES])
         self.neg_equal_one_sum = tf.placeholder(tf.float32, [None, 1, 1, 1])
 
         # ConvMD(M, Cin, Cout, k, (s), (p), input, training, ...)
@@ -89,18 +89,18 @@ class MiddleAndRPN:
             deconv3 = Deconv2D(256, 256, 4, (4, 4), (0, 0),
                                temp_conv, training=self.training, name='deconv3')
 
-            # final:
+            # final: 768 = 256*3
             temp_conv = tf.concat([deconv3, deconv2, deconv1], -1)
             self.output_shape = [cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH]
 
-            # Probability score map, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, 2], 2 for two kinds anchor
-            p_map = ConvMD(2, 768, 2, k=1, s=(1, 1), p=(0, 0),
+            # Probability score map, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, AT]
+            p_map = ConvMD(2, 768, cfg.ANCHOR_TYPES, k=1, s=(1, 1), p=(0, 0),
                            input=temp_conv, training=self.training, activation=False, bn=False, name='conv20')
-            # Regression(residual) map, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, 14]
-            r_map = ConvMD(2, 768, 14, 1, (1, 1), (0, 0),
+            # Regression(residual) map, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, AT * 7]
+            r_map = ConvMD(2, 768, cfg.ANCHOR_TYPES * 7, 1, (1, 1), (0, 0),
                            temp_conv, training=self.training, activation=False, bn=False, name='conv21')
-            # softmax output for positive anchor and negative anchor, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, 2]
-            # just for one class now, use sigmoid, 2 for two kinds anchor
+            # softmax output for positive anchor and negative anchor, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, AT]
+            # just for one class now, use sigmoid
             self.p_pos = tf.sigmoid(p_map)
 
             # ------- classification loss --------

@@ -546,22 +546,28 @@ def box3d_to_label(batch_box3d, batch_cls, batch_score=[], coordinate='camera', 
 
 def cal_anchors():
     # Output:
-    #   anchors: (w, l, 2, 7) x y z h w l r
+    #   anchors: (w, l, AT, 7) x y z h w l r
     x = np.linspace(cfg.X_MIN, cfg.X_MAX, cfg.FEATURE_WIDTH)
     y = np.linspace(cfg.Y_MIN, cfg.Y_MAX, cfg.FEATURE_HEIGHT)
     cx, cy = np.meshgrid(x, y)
-    # all is (w, l, 2)
-    cx = np.tile(cx[..., np.newaxis], 2)
-    cy = np.tile(cy[..., np.newaxis], 2)
+    # all is (w, l, AT)
+    cx = np.tile(cx[..., np.newaxis], cfg.ANCHOR_TYPES)
+    cy = np.tile(cy[..., np.newaxis], cfg.ANCHOR_TYPES)
     cz = np.ones_like(cx) * cfg.ANCHOR_Z
     w = np.ones_like(cx) * cfg.ANCHOR_W
     l = np.ones_like(cx) * cfg.ANCHOR_L
     h = np.ones_like(cx) * cfg.ANCHOR_H
     r = np.ones_like(cx)
-    r[..., 0] = 0  # 0
-    r[..., 1] = 90 / 180 * np.pi  # 90
+    if cfg.ANCHOR_TYPES == 2:
+        r[..., 0] = 0
+        r[..., 1] = 90 / 180 * np.pi
+    elif cfg.ANCHOR_TYPES == 4:
+        r[..., 0] = 0
+        r[..., 1] = 45 / 180 * np.pi
+        r[..., 2] = 90 / 180 * np.pi
+        r[..., 3] = 135 / 180 * np.pi
 
-    # 7*(w,l,2) -> (w, l, 2, 7)
+    # 7 * (w, l, AT) -> (w, l, AT, 7)
     anchors = np.stack([cx, cy, cz, h, w, l, r], axis=-1)
 
     return anchors
@@ -571,20 +577,20 @@ def cal_rpn_target(labels, feature_map_shape, anchors, cls='Car', coordinate='li
     # Input:
     #   labels: (N, N')
     #   feature_map_shape: (w, l)
-    #   anchors: (w, l, 2, 7)
+    #   anchors: (w, l, AT, 7)
     # Output:
-    #   pos_equal_one (N, w, l, 2)
-    #   neg_equal_one (N, w, l, 2)
-    #   targets (N, w, l, 14)
+    #   pos_equal_one (N, w, l, AT)
+    #   neg_equal_one (N, w, l, AT)
+    #   targets (N, w, l, AT * 7)
     # attention: cal IoU on birdview
     batch_size = labels.shape[0]
     batch_gt_boxes3d = label_to_gt_box3d(labels, cls=cls, coordinate=coordinate)
     # defined in eq(1) in 2.2
     anchors_reshaped = anchors.reshape(-1, 7)
     anchors_d = np.sqrt(anchors_reshaped[:, 4]**2 + anchors_reshaped[:, 5]**2)
-    pos_equal_one = np.zeros((batch_size, *feature_map_shape, 2))
-    neg_equal_one = np.zeros((batch_size, *feature_map_shape, 2))
-    targets = np.zeros((batch_size, *feature_map_shape, 14))
+    pos_equal_one = np.zeros((batch_size, *feature_map_shape, cfg.ANCHOR_TYPES))
+    neg_equal_one = np.zeros((batch_size, *feature_map_shape, cfg.ANCHOR_TYPES))
+    targets = np.zeros((batch_size, *feature_map_shape, cfg.ANCHOR_TYPES * 7))
 
     for batch_id in range(batch_size):
         if len(batch_gt_boxes3d[batch_id]) == 0: # No object
@@ -636,7 +642,7 @@ def cal_rpn_target(labels, feature_map_shape, anchors, cls='Car', coordinate='li
 
         # cal the target and set the equal one
         index_x, index_y, index_z = np.unravel_index(
-            id_pos, (*feature_map_shape, 2))
+            id_pos, (*feature_map_shape, cfg.ANCHOR_TYPES))
         pos_equal_one[batch_id, index_x, index_y, index_z] = 1
 
         # ATTENTION: index_z should be np.array
@@ -656,11 +662,11 @@ def cal_rpn_target(labels, feature_map_shape, anchors, cls='Car', coordinate='li
             batch_gt_boxes3d[batch_id][id_pos_gt, 6] - anchors_reshaped[id_pos, 6])
 
         index_x, index_y, index_z = np.unravel_index(
-            id_neg, (*feature_map_shape, 2))
+            id_neg, (*feature_map_shape, cfg.ANCHOR_TYPES))
         neg_equal_one[batch_id, index_x, index_y, index_z] = 1
         # to avoid a box be pos/neg in the same time
         index_x, index_y, index_z = np.unravel_index(
-            id_highest, (*feature_map_shape, 2))
+            id_highest, (*feature_map_shape, cfg.ANCHOR_TYPES))
         neg_equal_one[batch_id, index_x, index_y, index_z] = 0
 
     return pos_equal_one, neg_equal_one, targets

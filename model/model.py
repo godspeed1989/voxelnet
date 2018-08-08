@@ -144,7 +144,7 @@ class RPN3D(object):
                 self.boxes2d, self.boxes2d_scores, max_output_size=cfg.RPN_NMS_POST_TOPK, iou_threshold=cfg.RPN_NMS_THRESH)
 
         # summary and saver
-        self.saver = tf.train.Saver(max_to_keep=10, pad_step_number=True, keep_checkpoint_every_n_hours=1.0)
+        self.saver = tf.train.Saver(max_to_keep=5, pad_step_number=True, keep_checkpoint_every_n_hours=1.0)
 
         train_summary_list = [
             tf.summary.scalar('train/loss', self.loss),
@@ -190,8 +190,11 @@ class RPN3D(object):
         print('train', tag)
         pos_equal_one, neg_equal_one, targets = cal_rpn_target(
             label, self.rpn_output_shape, self.anchors, cls=cfg.DETECT_OBJ, coordinate='lidar')
-        # (N, H, W, 2) -> (N, H, W, 14)
-        pos_equal_one_for_reg = np.concatenate([np.tile(pos_equal_one[..., [0]], 7), np.tile(pos_equal_one[..., [1]], 7)], axis=-1)
+        # (N, H, W, AT) -> (N, H, W, AT * 7)
+        pos_equal_one_list = []
+        for i in range(cfg.ANCHOR_TYPES):
+            pos_equal_one_list.append(np.tile(pos_equal_one[..., [i]], 7))
+        pos_equal_one_for_reg = np.concatenate(pos_equal_one_list, axis=-1)
         # every batch sum
         pos_equal_one_sum = np.clip(np.sum(pos_equal_one, axis=(1, 2, 3)).reshape(-1, 1, 1, 1), a_min=1, a_max=None)
         neg_equal_one_sum = np.clip(np.sum(neg_equal_one, axis=(1, 2, 3)).reshape(-1, 1, 1, 1), a_min=1, a_max=None)
@@ -236,8 +239,11 @@ class RPN3D(object):
         print('valid', tag)
         pos_equal_one, neg_equal_one, targets = cal_rpn_target(
             label, self.rpn_output_shape, self.anchors)
-        pos_equal_one_for_reg = np.concatenate(
-            [np.tile(pos_equal_one[..., [0]], 7), np.tile(pos_equal_one[..., [1]], 7)], axis=-1)
+        # (N, H, W, AT) -> (N, H, W, AT*7)
+        pos_equal_one_list = []
+        for i in range(cfg.ANCHOR_TYPES):
+            pos_equal_one_list.append(np.tile(pos_equal_one[..., [i]], 7))
+        pos_equal_one_for_reg = np.concatenate(pos_equal_one_list, axis=-1)
         pos_equal_one_sum = np.clip(np.sum(pos_equal_one, axis=(
             1, 2, 3)).reshape(-1, 1, 1, 1), a_min=1, a_max=None)
         neg_equal_one_sum = np.clip(np.sum(neg_equal_one, axis=(

@@ -144,6 +144,8 @@ if __C.DATA_SETS_TYPE == 'kitti':
         [0, 0, 0, 1]
     ])
 
+__C.ANCHOR_TYPES = 4
+
 # Faster-RCNN/SSD Hyper params
 if __C.DETECT_OBJ == 'Car':
     # car anchor
