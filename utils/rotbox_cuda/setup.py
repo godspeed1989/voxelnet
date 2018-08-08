@@ -108,7 +108,6 @@ class custom_build_ext(build_ext):
         customize_compiler_for_nvcc(self.compiler)
         build_ext.build_extensions(self)
 
-
 ext_modules = [
     Extension('rbbox_overlaps',
         ['rbbox_overlaps_kernel.cu', 'rbbox_overlaps.pyx'],

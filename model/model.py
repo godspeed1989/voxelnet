@@ -11,6 +11,7 @@ from model.group_pointcloud import FeatureNet
 from model.group_pointcloud_sift import FeatureNetSIFT
 from model.group_pointcloud_pntnet import FeatureNet_PntNet
 from model.rpn import MiddleAndRPN
+from utils.rotbox_cuda.rbbox_overlaps import py_rotate_nms_3d
 
 
 class RPN3D(object):
@@ -313,13 +314,17 @@ class RPN3D(object):
             tmp_boxes2d = batch_boxes2d[batch_id, ind, ...]
             tmp_scores = batch_probs[batch_id, ind]
 
-            # TODO: if possible, use rotate NMS
-            boxes2d = corner_to_standup_box2d(
-                center_to_corner_box2d(tmp_boxes2d, coordinate='lidar'))
-            ind = session.run(self.box2d_ind_after_nms, {
-                self.boxes2d: boxes2d,
-                self.boxes2d_scores: tmp_scores
-            })
+            if cfg.NMS_TYPE == '2d_standup':
+                boxes2d = corner_to_standup_box2d(
+                    center_to_corner_box2d(tmp_boxes2d, coordinate='lidar'))
+                ind = session.run(self.box2d_ind_after_nms, {
+                    self.boxes2d: boxes2d,
+                    self.boxes2d_scores: tmp_scores
+                })
+            elif cfg.NMS_TYPE == '3d_rbbox':
+                tmp_boxes3d_score = np.hstack((tmp_boxes3d, tmp_scores))
+                ind = py_rotate_nms_3d(np.ascontiguousarray(tmp_boxes3d_score, dtype=np.float32), cfg.RPN_NMS_THRESH)
+
             tmp_boxes3d = tmp_boxes3d[ind, ...]
             tmp_scores = tmp_scores[ind]
             ret_box3d.append(tmp_boxes3d)

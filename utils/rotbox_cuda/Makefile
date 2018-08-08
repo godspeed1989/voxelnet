@@ -5,4 +5,3 @@ all:
 clean:
 	rm -rf *.so
 	rm -rf rbbox_overlaps.cpp
-
