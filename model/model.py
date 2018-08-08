@@ -310,11 +310,15 @@ class RPN3D(object):
         for batch_id in range(len(self.avail_gpus) * self.single_batch_size):
             # remove box with low score
             ind = np.where(batch_probs[batch_id, :] >= cfg.RPN_SCORE_THRESH)[0]
-            tmp_boxes3d = batch_boxes3d[batch_id, ind, ...]
-            tmp_boxes2d = batch_boxes2d[batch_id, ind, ...]
-            tmp_scores = batch_probs[batch_id, ind]
+            if len(ind) == 0:
+                ret_box3d.append(np.zeros((0,7), dtype=batch_boxes3d.dtype))
+                ret_score.append(np.zeros((0,), dtype=batch_probs.dtype))
+                continue
+            tmp_boxes3d = batch_boxes3d[batch_id, ind, ...] # (n, 7)
+            tmp_scores = batch_probs[batch_id, ind] # (n, )
 
             if cfg.NMS_TYPE == '2d_standup':
+                tmp_boxes2d = batch_boxes2d[batch_id, ind, ...]
                 boxes2d = corner_to_standup_box2d(
                     center_to_corner_box2d(tmp_boxes2d, coordinate='lidar'))
                 ind = session.run(self.box2d_ind_after_nms, {
@@ -322,7 +326,8 @@ class RPN3D(object):
                     self.boxes2d_scores: tmp_scores
                 })
             elif cfg.NMS_TYPE == '3d_rbbox':
-                tmp_boxes3d_score = np.hstack((tmp_boxes3d, tmp_scores))
+                tmp_scores_ex = np.expand_dims(tmp_scores, axis=-1)
+                tmp_boxes3d_score = np.hstack((tmp_boxes3d, tmp_scores_ex))
                 ind = py_rotate_nms_3d(np.ascontiguousarray(tmp_boxes3d_score, dtype=np.float32), cfg.RPN_NMS_THRESH)
 
             tmp_boxes3d = tmp_boxes3d[ind, ...]
