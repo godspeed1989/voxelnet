@@ -335,6 +335,10 @@ class RPN3D(object):
                 tmp_scores_ex = np.expand_dims(tmp_scores, axis=-1)
                 tmp_boxes3d_score = np.hstack((tmp_boxes3d, tmp_scores_ex))
                 ind = py_rotate_nms_3d(np.ascontiguousarray(tmp_boxes3d_score, dtype=np.float32), cfg.RPN_NMS_THRESH)
+            elif cfg.NMS_TYPE == '3d_rbbox_v1':
+                tmp_scores_ex = np.expand_dims(tmp_scores, axis=-1)
+                tmp_boxes3d_score = np.hstack((tmp_boxes3d, tmp_scores_ex))
+                ind = rbbox_nms_3d_v1(tmp_boxes3d_score, cfg.RPN_NMS_THRESH)
 
             tmp_boxes3d = tmp_boxes3d[ind, ...]
             tmp_scores = tmp_scores[ind]

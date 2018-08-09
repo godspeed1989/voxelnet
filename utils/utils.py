@@ -855,6 +855,47 @@ def cal_box2d_iou(boxes2d, gt_boxes2d, T_VELO_2_CAM=None, R_RECT_0=None):
 
     return output
 
+def rbbox_nms_3d_v1(dets, threshold):
+    '''
+    Parameters
+    ----------------
+    dets: (N, 8) x y z l h w r score
+    threshold: 0.7 or 0.5 IoU
+    ----------------
+    Returns
+    ----------------
+    keep: keep the remaining index of dets
+    '''
+    keep = []
+    scores = dets[:, -1]
+    # 按照score置信度降序排序
+    order = scores.argsort()[::-1]
+    ndets = dets.shape[0]
+    suppressed = np.zeros((ndets), dtype = np.int)
+
+    def rbbox_overlaps(b1, b2):
+        b1 = np.expand_dims(b1, axis=0)
+        b2 = np.expand_dims(b2, axis=0)
+        return py_rbbox_overlaps_3d(np.ascontiguousarray(b1, dtype=np.float32),
+                                    np.ascontiguousarray(b2, dtype=np.float32))[0][0]
+
+    for _i in range(ndets):
+        i = order[_i]
+        if suppressed[i] == 1:
+            continue
+        keep.append(i)
+        suppressed[i] = 1
+        box1 = dets[i, :7]
+        for _j in range(_i+1, ndets):
+            #tic = time.time()
+            j = order[_j]
+            if suppressed[j] == 1:
+                continue
+            box2 = dets[j, :7]
+            ovr = rbbox_overlaps(box1, box2)
+            if ovr > threshold:
+                suppressed[j] = 1
+    return keep
 
 if __name__ == '__main__':
     pass

@@ -181,8 +181,8 @@ __C.RPN_SCORE_THRESH = 0.96
 
 # cal IoU method: 2d_standup / 3d_cv2 / 3d_rbbox
 __C.IOU_TYPE = '3d_rbbox'
-# cal IoU method: 2d_standup / 3d_rbbox
-__C.NMS_TYPE = '3d_rbbox'
+# cal IoU method: 2d_standup / 3d_rbbox / 3d_rbbox_v1
+__C.NMS_TYPE = '3d_rbbox_v1'
 
 # utils
 __C.CORNER2CENTER_AVG = True  # average version or max version
