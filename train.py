@@ -15,6 +15,8 @@ from utils.kitti_loader import iterate_data, sample_test_data
 from utils.utils import box3d_to_label
 from train_hook import check_if_should_pause
 from termcolor import cprint
+import warnings
+warnings.filterwarnings('error')
 
 log_f = None
 def log_print(s, color='green', write=True):
