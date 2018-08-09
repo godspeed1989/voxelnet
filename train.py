@@ -16,7 +16,6 @@ from utils.utils import box3d_to_label
 from train_hook import check_if_should_pause
 from termcolor import cprint
 import warnings
-warnings.filterwarnings('error')
 
 log_f = None
 def log_print(s, color='green', write=True):
@@ -153,11 +152,13 @@ def main(_):
                         summary_writer.add_summary(ret[-1], global_counter)
                         log_print('validation: loss: {:.4f} reg_loss: {:.4f} cls_loss: {:.4f} '.format(ret[0], ret[1], ret[2]))
 
-                        try:
-                            ret = model.predict_step(sess, batch, summary=True)
-                            summary_writer.add_summary(ret[-1], global_counter)
-                        except:
-                            log_print('prediction skipped due to error', 'red')
+                        with warnings.catch_warnings():
+                            warnings.filterwarnings('error')
+                            try:
+                                ret = model.predict_step(sess, batch, summary=True)
+                                summary_writer.add_summary(ret[-1], global_counter)
+                            except:
+                                log_print('prediction skipped due to error', 'red')
 
                     if check_if_should_pause(args.tag):
                         model.saver.save(sess, os.path.join(save_model_dir, timestr), global_step=model.global_step)
