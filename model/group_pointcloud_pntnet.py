@@ -5,9 +5,23 @@ import os
 import numpy as np
 import tensorflow as tf
 import time
-import utils.tf_util as tf_util
 
 from config import cfg
+
+def pointcnv(pc_feature, Cout, scope, training, activation=True):
+    """
+    Input: (B,N,C)
+    Return: (B,N,Cout)
+    """
+    with tf.variable_scope(scope):
+        pc_feature = tf.layers.conv1d(pc_feature, Cout, kernel_size=1, strides=1,
+                        padding="valid", reuse=tf.AUTO_REUSE, name='conv1d')
+        pc_feature = tf.layers.batch_normalization(pc_feature, axis=-1,
+                        fused=True, training=training, reuse=tf.AUTO_REUSE, name='bn')
+        if activation:
+            return tf.nn.relu(pc_feature)
+        else:
+            return pc_feature
 
 class VFELayer(object):
     def __init__(self, out_channels, name):
@@ -15,33 +29,16 @@ class VFELayer(object):
         self.units = out_channels
 
     def apply(self, inputs, mask, training):
-        # [K, T, F] -> [K, T, 1, F]
-        pc_feature = tf.expand_dims(inputs, axis=-2)
-        pc_feature = tf_util.conv2d(pc_feature, 32, [1,1],
-                                    padding='VALID', stride=[1,1],
-                                    bn=True, is_training=training,
-                                    scope='vfe_conv1',
-                                    activation_fn=tf.nn.relu)
-        pc_feature = tf_util.conv2d(pc_feature, 64, [1,1],
-                                    padding='VALID', stride=[1,1],
-                                    bn=True, is_training=training,
-                                    scope='vfe_conv2',
-                                    activation_fn=tf.nn.relu)
-        pc_feature = tf_util.conv2d(pc_feature, 128, [1,1],
-                                    padding='VALID', stride=[1,1],
-                                    bn=True, is_training=training,
-                                    scope='vfe_conv3',
-                                    activation_fn=tf.nn.relu)
-        pc_feature = tf_util.conv2d(pc_feature, self.units, [1,1],
-                                    padding='VALID', stride=[1,1],
-                                    bn=True, is_training=training,
-                                    scope='vfe_conv4',
-                                    activation_fn=tf.nn.relu)
-        # [K, T, 1, C] -> [K, T, C]
-        pc_feature = tf.squeeze(pc_feature, axis=2)
+        pc_feature = pointcnv(inputs, 32, 'vfe_conv1', training)
+        pc_feature = pointcnv(pc_feature, 64, 'vfe_conv2', training)
+        pc_feature = tf.concat([inputs, pc_feature], axis=-1)
+        pc_feature = pointcnv(pc_feature, 128, 'vfe_conv3', training)
+        pc_feature = pointcnv(pc_feature, self.units, 'vfe_conv4', training)
+
         # [K, 1, units]
         mask = tf.tile(mask, [1, 1, self.units])
         pc_feature = tf.multiply(pc_feature, tf.cast(mask, tf.float32))
+        # [K, F, units] -> [K, units]
         aggregated = tf.reduce_max(pc_feature, axis=1, keepdims=False)
 
         return aggregated

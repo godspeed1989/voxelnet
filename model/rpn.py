@@ -33,13 +33,14 @@ class MiddleAndRPN:
             # convolutinal middle layers
             temp_conv = self.input_data
             batch_size = self.input_data.get_shape()[0]
-            if cfg.GRID_Z_SIZE >= 3:
+            if cfg.VOXEL_Z_ONE is not True:
                 temp_conv = ConvMD(3, 128, 64, 3, (2, 1, 1),
                                 (1, 1, 1), temp_conv, training=self.training, name='conv1')
                 temp_conv = ConvMD(3, 64, 64, 3, (1, 1, 1),
                                 (0, 1, 1), temp_conv, training=self.training, name='conv2')
                 temp_conv = ConvMD(3, 64, 64, 3, (2, 1, 1),
                                 (1, 1, 1), temp_conv, training=self.training, name='conv3')
+                print(temp_conv.shape)
             # (N, D, H, W, C) -> (N, H, W, C, D)
             temp_conv = tf.transpose(temp_conv, perm=[0, 2, 3, 4, 1])
             temp_conv = tf.reshape(temp_conv, [batch_size, cfg.INPUT_HEIGHT, cfg.INPUT_WIDTH, -1])

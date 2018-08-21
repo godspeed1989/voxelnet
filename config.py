@@ -38,6 +38,7 @@ __C.SUMMART_ALL_VARS = False
 
 # selected object
 __C.DETECT_OBJ = 'Car'  # Pedestrian/Cyclist
+__C.VOXEL_Z_ONE = True
 if __C.DETECT_OBJ == 'Car':
     __C.Z_MIN = -3
     __C.Z_MAX = 1
@@ -45,12 +46,16 @@ if __C.DETECT_OBJ == 'Car':
     __C.Y_MAX = 40
     __C.X_MIN = 0
     __C.X_MAX = 70.4
-    __C.VOXEL_Z_SIZE = __C.Z_MAX - __C.Z_MIN # 0.4
     __C.VOXEL_Y_SIZE = 0.2
     __C.VOXEL_X_SIZE = 0.2
-    __C.GRID_Z_SIZE = 1  # int((__C.Z_MAX - __C.Z_MIN) / __C.VOXEL_Z_SIZE)
     __C.GRID_Y_SIZE = int((__C.Y_MAX - __C.Y_MIN) / __C.VOXEL_Y_SIZE)
     __C.GRID_X_SIZE = int((__C.X_MAX - __C.X_MIN) / __C.VOXEL_X_SIZE)
+    if __C.VOXEL_Z_ONE:
+        __C.VOXEL_Z_SIZE = __C.Z_MAX - __C.Z_MIN
+        __C.GRID_Z_SIZE = 1
+    else:
+        __C.VOXEL_Z_SIZE = 0.4
+        __C.GRID_Z_SIZE = int((__C.Z_MAX - __C.Z_MIN) / __C.VOXEL_Z_SIZE)
     __C.VOXEL_POINT_COUNT = 50
     __C.INPUT_WIDTH = __C.GRID_X_SIZE
     __C.INPUT_HEIGHT = __C.GRID_Y_SIZE
