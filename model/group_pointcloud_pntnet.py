@@ -60,8 +60,9 @@ class FeatureNet_PntNet(object):
         # [K, 4], each row stores (batch, d, h, w)
         self.coordinate_pl = tf.placeholder(tf.int64, [None, 4], name='coordinate')
 
-        self.vfe = VFELayer(256, 'VFE')
+        Cout = 128
+        self.vfe = VFELayer(Cout, 'VFE')
         voxelwise = self.vfe.apply(self.feature_pl, self.mask_pl, self.training)
 
         self.outputs = tf.scatter_nd(
-            self.coordinate_pl, voxelwise, [self.batch_size, cfg.GRID_Z_SIZE, cfg.GRID_Y_SIZE, cfg.GRID_X_SIZE, 256])
+            self.coordinate_pl, voxelwise, [self.batch_size, cfg.GRID_Z_SIZE, cfg.GRID_Y_SIZE, cfg.GRID_X_SIZE, Cout])

@@ -4,7 +4,7 @@ import tensorflow as tf
 import numpy as np
 
 from config import cfg
-
+from model.squeeze import res_squeeze_net
 
 small_addon_for_BCE = 1e-6
 
@@ -43,55 +43,64 @@ class MiddleAndRPN:
                 print(temp_conv.shape)
             # (N, D, H, W, C) -> (N, H, W, C, D)
             temp_conv = tf.transpose(temp_conv, perm=[0, 2, 3, 4, 1])
+            assert temp_conv.get_shape()[1] == cfg.INPUT_HEIGHT
+            assert temp_conv.get_shape()[2] == cfg.INPUT_WIDTH
             temp_conv = tf.reshape(temp_conv, [batch_size, cfg.INPUT_HEIGHT, cfg.INPUT_WIDTH, -1])
 
-            # rpn
-            # block1:
-            temp_conv = ConvMD(2, 128, 128, 3, (2, 2), (1, 1),
-                               temp_conv, training=self.training, name='conv4')
-            temp_conv = ConvMD(2, 128, 128, 3, (1, 1), (1, 1),
-                               temp_conv, training=self.training, name='conv5')
-            temp_conv = ConvMD(2, 128, 128, 3, (1, 1), (1, 1),
-                               temp_conv, training=self.training, name='conv6')
-            temp_conv = ConvMD(2, 128, 128, 3, (1, 1), (1, 1),
-                               temp_conv, training=self.training, name='conv7')
-            deconv1 = Deconv2D(128, 256, 3, (1, 1), (0, 0),
-                               temp_conv, training=self.training, name='deconv1')
+            if cfg.RPN_TYPE == 'voxelnet':
+                # rpn
+                # block1:
+                temp_conv = ConvMD(2, 128, 128, 3, (2, 2), (1, 1),
+                                temp_conv, training=self.training, name='conv4')
+                temp_conv = ConvMD(2, 128, 128, 3, (1, 1), (1, 1),
+                                temp_conv, training=self.training, name='conv5')
+                temp_conv = ConvMD(2, 128, 128, 3, (1, 1), (1, 1),
+                                temp_conv, training=self.training, name='conv6')
+                temp_conv = ConvMD(2, 128, 128, 3, (1, 1), (1, 1),
+                                temp_conv, training=self.training, name='conv7')
+                deconv1 = Deconv2D(128, 256, 3, (1, 1), (0, 0),
+                                temp_conv, training=self.training, name='deconv1')
 
-            # block2:
-            temp_conv = ConvMD(2, 128, 128, 3, (2, 2), (1, 1),
-                               temp_conv, training=self.training, name='conv8')
-            temp_conv = ConvMD(2, 128, 128, 3, (1, 1), (1, 1),
-                               temp_conv, training=self.training, name='conv9')
-            temp_conv = ConvMD(2, 128, 128, 3, (1, 1), (1, 1),
-                               temp_conv, training=self.training, name='conv10')
-            temp_conv = ConvMD(2, 128, 128, 3, (1, 1), (1, 1),
-                               temp_conv, training=self.training, name='conv11')
-            temp_conv = ConvMD(2, 128, 128, 3, (1, 1), (1, 1),
-                               temp_conv, training=self.training, name='conv12')
-            temp_conv = ConvMD(2, 128, 128, 3, (1, 1), (1, 1),
-                               temp_conv, training=self.training, name='conv13')
-            deconv2 = Deconv2D(128, 256, 2, (2, 2), (0, 0),
-                               temp_conv, training=self.training, name='deconv2')
+                # block2:
+                temp_conv = ConvMD(2, 128, 128, 3, (2, 2), (1, 1),
+                                temp_conv, training=self.training, name='conv8')
+                temp_conv = ConvMD(2, 128, 128, 3, (1, 1), (1, 1),
+                                temp_conv, training=self.training, name='conv9')
+                temp_conv = ConvMD(2, 128, 128, 3, (1, 1), (1, 1),
+                                temp_conv, training=self.training, name='conv10')
+                temp_conv = ConvMD(2, 128, 128, 3, (1, 1), (1, 1),
+                                temp_conv, training=self.training, name='conv11')
+                temp_conv = ConvMD(2, 128, 128, 3, (1, 1), (1, 1),
+                                temp_conv, training=self.training, name='conv12')
+                temp_conv = ConvMD(2, 128, 128, 3, (1, 1), (1, 1),
+                                temp_conv, training=self.training, name='conv13')
+                deconv2 = Deconv2D(128, 256, 2, (2, 2), (0, 0),
+                                temp_conv, training=self.training, name='deconv2')
 
-            # block3:
-            temp_conv = ConvMD(2, 128, 256, 3, (2, 2), (1, 1),
-                               temp_conv, training=self.training, name='conv14')
-            temp_conv = ConvMD(2, 256, 256, 3, (1, 1), (1, 1),
-                               temp_conv, training=self.training, name='conv15')
-            temp_conv = ConvMD(2, 256, 256, 3, (1, 1), (1, 1),
-                               temp_conv, training=self.training, name='conv16')
-            temp_conv = ConvMD(2, 256, 256, 3, (1, 1), (1, 1),
-                               temp_conv, training=self.training, name='conv17')
-            temp_conv = ConvMD(2, 256, 256, 3, (1, 1), (1, 1),
-                               temp_conv, training=self.training, name='conv18')
-            temp_conv = ConvMD(2, 256, 256, 3, (1, 1), (1, 1),
-                               temp_conv, training=self.training, name='conv19')
-            deconv3 = Deconv2D(256, 256, 4, (4, 4), (0, 0),
-                               temp_conv, training=self.training, name='deconv3')
+                # block3:
+                temp_conv = ConvMD(2, 128, 256, 3, (2, 2), (1, 1),
+                                temp_conv, training=self.training, name='conv14')
+                temp_conv = ConvMD(2, 256, 256, 3, (1, 1), (1, 1),
+                                temp_conv, training=self.training, name='conv15')
+                temp_conv = ConvMD(2, 256, 256, 3, (1, 1), (1, 1),
+                                temp_conv, training=self.training, name='conv16')
+                temp_conv = ConvMD(2, 256, 256, 3, (1, 1), (1, 1),
+                                temp_conv, training=self.training, name='conv17')
+                temp_conv = ConvMD(2, 256, 256, 3, (1, 1), (1, 1),
+                                temp_conv, training=self.training, name='conv18')
+                temp_conv = ConvMD(2, 256, 256, 3, (1, 1), (1, 1),
+                                temp_conv, training=self.training, name='conv19')
+                deconv3 = Deconv2D(256, 256, 4, (4, 4), (0, 0),
+                                temp_conv, training=self.training, name='deconv3')
 
-            # final: 768 = 256*3
-            temp_conv = tf.concat([deconv3, deconv2, deconv1], -1)
+                # final: 768 = 256*3
+                temp_conv = tf.concat([deconv3, deconv2, deconv1], -1)
+            elif cfg.RPN_TYPE == 'res_sequeeze':
+                temp_conv = res_squeeze_net(temp_conv, self.training)
+
+            assert temp_conv.get_shape()[1] == cfg.FEATURE_HEIGHT
+            assert temp_conv.get_shape()[2] == cfg.FEATURE_WIDTH
+            assert temp_conv.get_shape()[3] == 768
             self.output_shape = [cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH]
 
             # Probability score map, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, AT]

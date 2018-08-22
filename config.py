@@ -29,6 +29,9 @@ __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 # select FeatureNet / FeatureNetSIFT / FeatureNet_PntNet
 __C.FEATURE_NET_TYPE = 'FeatureNet_PntNet'
 
+# select voxelnet / res_sequeeze
+__C.RPN_TYPE = 'res_sequeeze'
+
 # for gpu allocation
 __C.GPU_AVAILABLE = '0'
 __C.GPU_USE_COUNT = len(__C.GPU_AVAILABLE.split(','))
