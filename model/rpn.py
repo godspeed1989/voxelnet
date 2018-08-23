@@ -4,9 +4,9 @@ import tensorflow as tf
 import numpy as np
 
 from config import cfg
-from model.squeeze import res_squeeze_net
+from model.squeeze import res_squeeze_net, res_net
 
-small_addon_for_BCE = 1e-6
+small_addon_for_BCE = 1e-8
 
 
 class MiddleAndRPN:
@@ -97,17 +97,19 @@ class MiddleAndRPN:
                 temp_conv = tf.concat([deconv3, deconv2, deconv1], -1)
             elif cfg.RPN_TYPE == 'res_sequeeze':
                 temp_conv = res_squeeze_net(temp_conv, self.training)
+            elif cfg.RPN_TYPE == 'res_net':
+                temp_conv = res_net(temp_conv, self.training)
 
             assert temp_conv.get_shape()[1] == cfg.FEATURE_HEIGHT
             assert temp_conv.get_shape()[2] == cfg.FEATURE_WIDTH
-            assert temp_conv.get_shape()[3] == 768
+            Cout = temp_conv.get_shape()[3]
             self.output_shape = [cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH]
 
             # Probability score map, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, AT]
-            p_map = ConvMD(2, 768, cfg.ANCHOR_TYPES, k=1, s=(1, 1), p=(0, 0),
+            p_map = ConvMD(2, Cout, cfg.ANCHOR_TYPES, k=1, s=(1, 1), p=(0, 0),
                            input=temp_conv, training=self.training, activation=False, bn=False, name='conv20')
             # Regression(residual) map, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, AT * 7]
-            r_map = ConvMD(2, 768, cfg.ANCHOR_TYPES * 7, 1, (1, 1), (0, 0),
+            r_map = ConvMD(2, Cout, cfg.ANCHOR_TYPES * 7, 1, (1, 1), (0, 0),
                            temp_conv, training=self.training, activation=False, bn=False, name='conv21')
             # softmax output for positive anchor and negative anchor, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, AT]
             # just for one class now, use sigmoid
@@ -126,7 +128,7 @@ class MiddleAndRPN:
             self.reg_loss = self.reg_loss / self.pos_equal_one_sum
             self.reg_loss = tf.reduce_sum(self.reg_loss)
 
-            self.loss = tf.reduce_sum(self.cls_loss + self.reg_loss)
+            self.loss = self.cls_loss + self.reg_loss
 
             self.delta_output = r_map
             self.prob_output = self.p_pos
