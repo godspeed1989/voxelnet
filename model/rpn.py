@@ -5,6 +5,7 @@ import numpy as np
 
 from config import cfg
 from model.squeeze import res_squeeze_net, res_net
+from model.avod import avod
 
 small_addon_for_BCE = 1e-8
 
@@ -99,6 +100,8 @@ class MiddleAndRPN:
                 temp_conv = res_squeeze_net(temp_conv, self.training)
             elif cfg.RPN_TYPE == 'res_net':
                 temp_conv = res_net(temp_conv, self.training)
+            elif cfg.RPN_TYPE == 'avod':
+                temp_conv = avod(temp_conv, self.training)
 
             assert temp_conv.get_shape()[1] == cfg.FEATURE_HEIGHT
             assert temp_conv.get_shape()[2] == cfg.FEATURE_WIDTH

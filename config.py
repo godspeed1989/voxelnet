@@ -29,8 +29,8 @@ __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 # select FeatureNet / FeatureNetSIFT / FeatureNet_PntNet
 __C.FEATURE_NET_TYPE = 'FeatureNet_PntNet'
 
-# select voxelnet / res_sequeeze / res_net
-__C.RPN_TYPE = 'voxelnet'
+# select voxelnet / res_sequeeze / res_net / avod
+__C.RPN_TYPE = 'avod'
 
 # select voxelnet / focal_loss
 __C.CLS_LOSS_TYPE = 'voxelnet'
