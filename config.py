@@ -17,7 +17,7 @@ cfg = __C
 
 # for dataset dir
 __C.USE_AUGED_DATA = True
-__C.REMOVE_GROUND = False
+__C.REMOVE_GROUND = True
 if __C.REMOVE_GROUND:
     __C.AUG_DATA_FOLDER = 'augment_rm_ground'
 else:
@@ -30,7 +30,10 @@ __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 __C.FEATURE_NET_TYPE = 'FeatureNet_PntNet'
 
 # select voxelnet / res_sequeeze / res_net
-__C.RPN_TYPE = 'res_net'
+__C.RPN_TYPE = 'voxelnet'
+
+# select voxelnet / focal_loss
+__C.CLS_LOSS_TYPE = 'voxelnet'
 
 # for gpu allocation
 __C.GPU_AVAILABLE = '0'

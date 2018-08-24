@@ -116,12 +116,25 @@ class MiddleAndRPN:
             self.p_pos = tf.sigmoid(p_map)
 
             # ------- classification loss --------
-            self.cls_pos_loss = (-self.pos_equal_one * tf.log(self.p_pos + small_addon_for_BCE)) / self.pos_equal_one_sum
-            self.cls_neg_loss = (-self.neg_equal_one * tf.log(1 - self.p_pos + small_addon_for_BCE)) / self.neg_equal_one_sum
+            if cfg.CLS_LOSS_TYPE == 'focal_loss':
+                self.cls_pos_loss = self.pos_equal_one * self.p_pos
+                self.cls_neg_loss = self.neg_equal_one * (1 - self.p_pos)
+                predictions_pt = self.cls_pos_loss + self.cls_neg_loss
+                fl_gamma = 2.0
+                fl_alpha = 0.25
+                alpha_t_pos = self.pos_equal_one * fl_alpha
+                alpha_t_neg = self.neg_equal_one * (1 - fl_alpha)
+                alpha_t = alpha_t_pos + alpha_t_neg
+                self.cls_loss = tf.reduce_sum(-alpha_t * tf.pow(1. - predictions_pt, fl_gamma) * tf.log(predictions_pt + small_addon_for_BCE))
+                self.cls_pos_loss_rec = tf.reduce_sum( self.cls_pos_loss / self.pos_equal_one_sum )
+                self.cls_neg_loss_rec = tf.reduce_sum( self.cls_neg_loss / self.neg_equal_one_sum )
+            elif cfg.CLS_LOSS_TYPE == 'voxelnet':
+                self.cls_pos_loss = (-self.pos_equal_one * tf.log(self.p_pos + small_addon_for_BCE)) / self.pos_equal_one_sum
+                self.cls_neg_loss = (-self.neg_equal_one * tf.log(1 - self.p_pos + small_addon_for_BCE)) / self.neg_equal_one_sum
 
-            self.cls_loss = tf.reduce_sum( alpha * self.cls_pos_loss + beta * self.cls_neg_loss )
-            self.cls_pos_loss_rec = tf.reduce_sum( self.cls_pos_loss )
-            self.cls_neg_loss_rec = tf.reduce_sum( self.cls_neg_loss )
+                self.cls_loss = tf.reduce_sum( alpha * self.cls_pos_loss + beta * self.cls_neg_loss )
+                self.cls_pos_loss_rec = tf.reduce_sum( self.cls_pos_loss )
+                self.cls_neg_loss_rec = tf.reduce_sum( self.cls_neg_loss )
 
             # -------- regression loss --------
             self.reg_loss = smooth_l1(r_map * self.pos_equal_one_for_reg, self.targets * self.pos_equal_one_for_reg, sigma)
