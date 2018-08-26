@@ -93,21 +93,22 @@ class VFELayer(object):
         self.units = out_channels
 
     def apply(self, inputs, mask, training):
-        batch_size = inputs.get_shape()[0].value
+        #batch_size = inputs.get_shape()[0].value
         # [K, T, 1] -> [K, T, 64]
         mask64 = tf.tile(mask, [1, 1, 64])
-
+        '''
         nn_feature = GetNNFeature(inputs, 8, batch_size, 'nn_feature')
         nn_feature = pointcnv(2, nn_feature, 32, 'vfe_nn_conv1', training)
         nn_feature = pointcnv(2, nn_feature, 64, 'vfe_nn_conv2', training, activation=False)
         nn_feature = tf.reduce_max(nn_feature, axis=2, keepdims=False)
         nn_feature = tf.multiply(nn_feature, tf.cast(mask64, tf.float32))
-
+        '''
         pc_feature = pointcnv(1, inputs, 32, 'vfe_pc_conv1', training)
         pc_feature = pointcnv(1, pc_feature, 64, 'vfe_pc_conv2', training)
         pc_feature = tf.multiply(pc_feature, tf.cast(mask64, tf.float32))
 
-        feature = tf.concat([pc_feature, nn_feature], axis=-1)
+        #feature = tf.concat([pc_feature, nn_feature], axis=-1)
+        feature = tf.concat([inputs, pc_feature], axis=-1)
         feature = pointcnv(1, feature, 128, 'vfe_conv1', training)
         feature = pointcnv(1, feature, self.units, 'vfe_conv2', training, activation=False)
 
