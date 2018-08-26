@@ -49,6 +49,7 @@ class RPN3D(object):
         self.vox_number = []
         self.vox_coordinate = []
         self.vox_mask = []
+        self.total_voxcnt = []
         self.targets = []
         self.pos_equal_one = []
         self.pos_equal_one_sum = []
@@ -83,6 +84,7 @@ class RPN3D(object):
                     self.vox_number.append(feature.number_pl)
                     self.vox_coordinate.append(feature.coordinate_pl)
                     self.vox_mask.append(feature.mask_pl)
+                    self.total_voxcnt.append(feature.voxcnt_pl)
                     self.targets.append(rpn.targets)
                     self.pos_equal_one.append(rpn.pos_equal_one)
                     self.pos_equal_one_sum.append(rpn.pos_equal_one_sum)
@@ -189,6 +191,7 @@ class RPN3D(object):
         vox_number = data[3]
         vox_coordinate = data[4]
         vox_mask = data[5]
+        total_vox_cnt = data[6]
 
         print('train', tag)
         pos_equal_one, neg_equal_one, targets = cal_rpn_target(
@@ -209,6 +212,7 @@ class RPN3D(object):
             input_feed[self.vox_number[idx]] = vox_number[idx]
             input_feed[self.vox_coordinate[idx]] = vox_coordinate[idx]
             input_feed[self.vox_mask[idx]] = vox_mask[idx]
+            input_feed[self.total_voxcnt[idx]] = total_vox_cnt[idx]
             input_feed[self.targets[idx]] = targets[idx * self.single_batch_size:(idx + 1) * self.single_batch_size]
             input_feed[self.pos_equal_one[idx]] = pos_equal_one[idx * self.single_batch_size:(idx + 1) * self.single_batch_size]
             input_feed[self.pos_equal_one_sum[idx]] = pos_equal_one_sum[idx * self.single_batch_size:(idx + 1) * self.single_batch_size]
@@ -238,6 +242,7 @@ class RPN3D(object):
         vox_number = data[3]
         vox_coordinate = data[4]
         vox_mask = data[5]
+        total_vox_cnt = data[6]
 
         print('valid', tag)
         pos_equal_one, neg_equal_one, targets = cal_rpn_target(
@@ -259,6 +264,7 @@ class RPN3D(object):
             input_feed[self.vox_number[idx]] = vox_number[idx]
             input_feed[self.vox_coordinate[idx]] = vox_coordinate[idx]
             input_feed[self.vox_mask[idx]] = vox_mask[idx]
+            input_feed[self.total_voxcnt[idx]] = total_vox_cnt[idx]
             input_feed[self.targets[idx]] = targets[idx * self.single_batch_size:(idx + 1) * self.single_batch_size]
             input_feed[self.pos_equal_one[idx]] = pos_equal_one[idx * self.single_batch_size:(idx + 1) * self.single_batch_size]
             input_feed[self.pos_equal_one_sum[idx]] = pos_equal_one_sum[idx * self.single_batch_size:(idx + 1) * self.single_batch_size]
@@ -290,8 +296,9 @@ class RPN3D(object):
         vox_number = data[3]
         vox_coordinate = data[4]
         vox_mask = data[5]
-        img = data[6]
-        lidar = data[7]
+        total_vox_cnt = data[6]
+        img = data[7]
+        lidar = data[8]
 
         if summary or vis:
             batch_gt_boxes3d = label_to_gt_box3d(
@@ -304,6 +311,7 @@ class RPN3D(object):
             input_feed[self.vox_number[idx]] = vox_number[idx]
             input_feed[self.vox_coordinate[idx]] = vox_coordinate[idx]
             input_feed[self.vox_mask[idx]] = vox_mask[idx]
+            input_feed[self.total_voxcnt[idx]] = total_vox_cnt[idx]
 
         output_feed = [self.prob_output, self.delta_output]
         probs, deltas = session.run(output_feed, input_feed)

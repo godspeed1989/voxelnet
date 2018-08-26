@@ -93,15 +93,16 @@ def iterate_data(data_dir, has_voxel=False, shuffle=False, aug=False,
         labels = [ ret[4] for ret in rets ]
 
         # only for voxel -> [gpu, k_single_batch, ...]
-        vox_feature, vox_number, vox_coordinate, vox_mask = [], [], [], []
+        vox_feature, vox_number, vox_coordinate, vox_mask, vox_cnt = [], [], [], [], []
         single_batch_size = int(batch_size / multi_gpu_sum)
         for idx in range(multi_gpu_sum):
-            _, per_vox_feature, per_vox_number, per_vox_coordinate, per_vox_mask = \
+            _, per_vox_feature, per_vox_number, per_vox_coordinate, per_vox_mask, total_vox_cnt = \
                 build_input(voxel[idx * single_batch_size:(idx + 1) * single_batch_size])
             vox_feature.append(per_vox_feature)
             vox_number.append(per_vox_number)
             vox_coordinate.append(per_vox_coordinate)
             vox_mask.append(per_vox_mask)
+            vox_cnt.append(total_vox_cnt)
 
         ret = (
                np.array(tag),
@@ -110,6 +111,7 @@ def iterate_data(data_dir, has_voxel=False, shuffle=False, aug=False,
                np.array(vox_number),
                np.array(vox_coordinate),
                np.array(vox_mask),
+               np.array(vox_cnt),
                np.array(rgb),
                np.array(raw_lidar)
                )
@@ -152,15 +154,16 @@ def sample_test_data(data_dir, batch_size=1, has_voxel=False, multi_gpu_sum=1):
     labels = [ ret[4] for ret in rets ]
 
     # only for voxel -> [gpu, k_single_batch, ...]
-    vox_feature, vox_number, vox_coordinate, vox_mask = [], [], [], []
+    vox_feature, vox_number, vox_coordinate, vox_mask, vox_cnt = [], [], [], [], []
     single_batch_size = int(batch_size / multi_gpu_sum)
     for idx in range(multi_gpu_sum):
-        _, per_vox_feature, per_vox_number, per_vox_coordinate, per_vox_mask = \
+        _, per_vox_feature, per_vox_number, per_vox_coordinate, per_vox_mask, total_vox_cnt = \
             build_input(voxel[idx * single_batch_size:(idx + 1) * single_batch_size])
         vox_feature.append(per_vox_feature)
         vox_number.append(per_vox_number)
         vox_coordinate.append(per_vox_coordinate)
         vox_mask.append(per_vox_mask)
+        vox_cnt.append(total_vox_cnt)
 
     ret = (
            np.array(tag),
@@ -169,6 +172,7 @@ def sample_test_data(data_dir, batch_size=1, has_voxel=False, multi_gpu_sum=1):
            np.array(vox_number),
            np.array(vox_coordinate),
            np.array(vox_mask),
+           np.array(vox_cnt),
            np.array(rgb),
            np.array(raw_lidar)
            )
@@ -183,6 +187,8 @@ def build_input(voxel_dict_list):
     number_list = []
     coordinate_list = []
     mask_list = []
+    voxelcnt_list = []
+    # combine batches to one
     for i, voxel_dict in zip(range(batch_size), voxel_dict_list):
         feature_list.append(voxel_dict['feature_buffer'])
         number_list.append(voxel_dict['number_buffer'])
@@ -191,12 +197,14 @@ def build_input(voxel_dict_list):
         coordinate = np.pad(coordinate, ((0, 0), (1, 0)), mode='constant', constant_values=i)
         coordinate_list.append(coordinate)
         mask_list.append(voxel_dict['mask_buffer'])
+        voxelcnt_list.append([voxel_dict['feature_buffer'].shape[0]])
 
     feature = np.concatenate(feature_list)
     number = np.concatenate(number_list)
     coordinate = np.concatenate(coordinate_list)
     mask = np.concatenate(mask_list)
-    return batch_size, feature, number, coordinate, mask
+    voxelcnt = np.concatenate(voxelcnt_list)
+    return batch_size, feature, number, coordinate, mask, voxelcnt
 
 
 if __name__ == '__main__':

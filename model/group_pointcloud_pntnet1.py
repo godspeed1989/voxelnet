@@ -133,48 +133,57 @@ class FeatureNet_PntNet1(object):
         self.feature_pl = tf.placeholder(tf.float32, [None, cfg.VOXEL_POINT_COUNT, cfg.POINT_FEATURE_LEN], name='feature')
         # [K]
         self.number_pl = tf.placeholder(tf.int64, [None], name='number')
+        # []
+        self.voxcnt_pl = tf.placeholder(tf.int64, [None], name='total_voxel_cnt')
         # [K, T, 1]
         self.mask_pl = tf.placeholder(tf.bool, [None, cfg.VOXEL_POINT_COUNT, 1], name='mask')
         # [K, 4], each row stores (batch, d, h, w)
         self.coordinate_pl = tf.placeholder(tf.int64, [None, 4], name='coordinate')
 
-        total_voxels = tf.reduce_sum(self.number_pl)
+        total_voxels = tf.reduce_sum(self.voxcnt_pl)
         Cout = 128
         self.vfe = VFELayer(total_voxels, Cout, 'VFE')
         voxelwise = self.vfe.apply(self.feature_pl[:,:,:3], self.mask_pl, self.training)
 
         max_intensity = tf.reduce_max(self.feature_pl[:,:,3], axis=-1, keepdims=True)
-        voxelwise = tf.concat((voxelwise, max_intensity), axis=-1)
+        number_vox = tf.expand_dims(tf.cast(number_pl, tf.float32), axis=-1) / cfg.VOXEL_POINT_COUNT
+        voxelwise = tf.concat((voxelwise, max_intensity, number_vox), axis=-1)
 
         self.outputs = tf.scatter_nd(
             self.coordinate_pl, voxelwise, [self.batch_size, cfg.GRID_Z_SIZE, cfg.GRID_Y_SIZE, cfg.GRID_X_SIZE, Cout+1])
 
 if __name__ == '__main__':
+    VOXEL_POINT_COUNT = 50
     training = tf.placeholder(tf.bool)
     # [K, T, F]
-    feature_pl = tf.placeholder(tf.float32, [None, 45, 4], name='feature')
+    feature_pl = tf.placeholder(tf.float32, [None, VOXEL_POINT_COUNT, 4], name='feature')
     # [K]
     number_pl = tf.placeholder(tf.int64, [None], name='number')
+    # []
+    voxcnt_pl = tf.placeholder(tf.int64, [None], name='total_voxel_cnt')
     # [K, T, 1]
-    mask_pl = tf.placeholder(tf.bool, [None, 45, 1], name='mask')
+    mask_pl = tf.placeholder(tf.bool, [None, VOXEL_POINT_COUNT, 1], name='mask')
 
-    total_voxels = tf.reduce_sum(number_pl)
+    total_voxels = tf.reduce_sum(voxcnt_pl)
     Cout = 128
     vfe = VFELayer(total_voxels, Cout, 'VFE')
     voxelwise = vfe.apply(feature_pl[:,:,:3], mask_pl, training)
 
     max_intensity = tf.reduce_max(feature_pl[:,:,3], axis=-1, keepdims=True)
-    voxelwise = tf.concat((voxelwise, max_intensity), axis=-1)
+    number_vox = tf.expand_dims(tf.cast(number_pl, tf.float32), axis=-1) / VOXEL_POINT_COUNT
+    voxelwise = tf.concat((voxelwise, max_intensity, number_vox), axis=-1)
 
     voxels_total = 32
-    feature_in = np.random.rand(voxels_total, 45, 4)
-    number_in = np.array([12, 20], dtype=np.int64)
-    mask_in = np.ones([voxels_total, 45, 1], dtype=np.bool)
+    feature_in = np.random.rand(voxels_total, VOXEL_POINT_COUNT, 4)
+    number_in = np.ones([voxels_total,], dtype=np.int64)
+    voxcnt_in = np.array([12, 20], dtype=np.int64)
+    mask_in = np.ones([voxels_total, VOXEL_POINT_COUNT, 1], dtype=np.bool)
     #
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
     ret = sess.run(voxelwise, {feature_pl: feature_in,
                                number_pl: number_in,
+                               voxcnt_pl: voxcnt_in,
                                mask_pl: mask_in,
                                training: False})
     print(ret.shape)
