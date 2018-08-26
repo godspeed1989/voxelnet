@@ -6,7 +6,8 @@ import numpy as np
 import tensorflow as tf
 import time
 
-from config import cfg
+if __name__ != '__main__':
+    from config import cfg
 
 ''' Compute pairwise distance of a point cloud
 input
@@ -34,7 +35,7 @@ Returns:
 def knn(adj_matrix, k):
     neg_adj = -adj_matrix
     _, nn_idx = tf.nn.top_k(neg_adj, k=k, sorted=True)
-    return nn_idx
+    return tf.cast(nn_idx, tf.int64)
 
 """ Construct nearest neighbor for each point
 Args:
@@ -49,9 +50,10 @@ def get_nn(pts, batch_size, nn_idx):
     pts_flat = tf.reshape(pts, [-1, num_dims]) # flatten
 
     # [0*P, 1*P,..., (B-1)*P]
-    batch_idx_ = tf.range(batch_size) * num_points
+    batch_idx_ = tf.range(batch_size, dtype=tf.int64) * num_points
     # [[[0]], [[P]], ..., [[(B-1)*P]]] = (B, 1, 1)
-    batch_idx_ = tf.reshape(batch_idx_, [batch_size, 1, 1])
+    batch_idx_ = tf.expand_dims(batch_idx_, axis=-1)
+    batch_idx_ = tf.expand_dims(batch_idx_, axis=-1)
     # 因为flatten了point_cloud，所以需要加上batch_idx
     # indices = (B, 1, 1) + (B, N, K) = (B, N, K)
     neighbors_indices = nn_idx + batch_idx_
@@ -88,27 +90,26 @@ def pointcnv(M, pc_feature, Cout, scope, training, activation=True):
             return pc_feature
 
 class VFELayer(object):
-    def __init__(self, out_channels, name):
+    def __init__(self, batch_size, out_channels, name):
         super(VFELayer, self).__init__()
         self.units = out_channels
+        self.batch_size = batch_size
 
     def apply(self, inputs, mask, training):
-        #batch_size = inputs.get_shape()[0].value
         # [K, T, 1] -> [K, T, 64]
         mask64 = tf.tile(mask, [1, 1, 64])
-        '''
-        nn_feature = GetNNFeature(inputs, 8, batch_size, 'nn_feature')
+
+        nn_feature = GetNNFeature(inputs, 8, self.batch_size, 'nn_feature')
         nn_feature = pointcnv(2, nn_feature, 32, 'vfe_nn_conv1', training)
         nn_feature = pointcnv(2, nn_feature, 64, 'vfe_nn_conv2', training, activation=False)
         nn_feature = tf.reduce_max(nn_feature, axis=2, keepdims=False)
         nn_feature = tf.multiply(nn_feature, tf.cast(mask64, tf.float32))
-        '''
+
         pc_feature = pointcnv(1, inputs, 32, 'vfe_pc_conv1', training)
         pc_feature = pointcnv(1, pc_feature, 64, 'vfe_pc_conv2', training)
         pc_feature = tf.multiply(pc_feature, tf.cast(mask64, tf.float32))
 
-        #feature = tf.concat([pc_feature, nn_feature], axis=-1)
-        feature = tf.concat([inputs, pc_feature], axis=-1)
+        feature = tf.concat([pc_feature, nn_feature], axis=-1)
         feature = pointcnv(1, feature, 128, 'vfe_conv1', training)
         feature = pointcnv(1, feature, self.units, 'vfe_conv2', training, activation=False)
 
@@ -137,8 +138,9 @@ class FeatureNet_PntNet1(object):
         # [K, 4], each row stores (batch, d, h, w)
         self.coordinate_pl = tf.placeholder(tf.int64, [None, 4], name='coordinate')
 
+        total_voxels = tf.reduce_sum(self.number_pl)
         Cout = 128
-        self.vfe = VFELayer(Cout, 'VFE')
+        self.vfe = VFELayer(total_voxels, Cout, 'VFE')
         voxelwise = self.vfe.apply(self.feature_pl[:,:,:3], self.mask_pl, self.training)
 
         max_intensity = tf.reduce_max(self.feature_pl[:,:,3], axis=-1, keepdims=True)
@@ -146,3 +148,33 @@ class FeatureNet_PntNet1(object):
 
         self.outputs = tf.scatter_nd(
             self.coordinate_pl, voxelwise, [self.batch_size, cfg.GRID_Z_SIZE, cfg.GRID_Y_SIZE, cfg.GRID_X_SIZE, Cout+1])
+
+if __name__ == '__main__':
+    training = tf.placeholder(tf.bool)
+    # [K, T, F]
+    feature_pl = tf.placeholder(tf.float32, [None, 45, 4], name='feature')
+    # [K]
+    number_pl = tf.placeholder(tf.int64, [None], name='number')
+    # [K, T, 1]
+    mask_pl = tf.placeholder(tf.bool, [None, 45, 1], name='mask')
+
+    total_voxels = tf.reduce_sum(number_pl)
+    Cout = 128
+    vfe = VFELayer(total_voxels, Cout, 'VFE')
+    voxelwise = vfe.apply(feature_pl[:,:,:3], mask_pl, training)
+
+    max_intensity = tf.reduce_max(feature_pl[:,:,3], axis=-1, keepdims=True)
+    voxelwise = tf.concat((voxelwise, max_intensity), axis=-1)
+
+    voxels_total = 32
+    feature_in = np.random.rand(voxels_total, 45, 4)
+    number_in = np.array([12, 20], dtype=np.int64)
+    mask_in = np.ones([voxels_total, 45, 1], dtype=np.bool)
+    #
+    sess = tf.Session()
+    sess.run(tf.global_variables_initializer())
+    ret = sess.run(voxelwise, {feature_pl: feature_in,
+                               number_pl: number_in,
+                               mask_pl: mask_in,
+                               training: False})
+    print(ret.shape)
