@@ -35,7 +35,7 @@ class VFELayer(object):
         pc_feature = pointcnv(pc_feature, 128, 'vfe_conv3', training)
         pc_feature = pointcnv(pc_feature, self.units, 'vfe_conv4', training, activation=False)
 
-        # [K, 1, units]
+        # [K, T, 1] -> [K, T, units]
         mask = tf.tile(mask, [1, 1, self.units])
         pc_feature = tf.multiply(pc_feature, tf.cast(mask, tf.float32))
         # [K, T, units] -> [K, units]

@@ -88,16 +88,16 @@ def pointcnv(M, pc_feature, Cout, scope, training, activation=True):
             return pc_feature
 
 class VFELayer(object):
-    def __init__(self, out_channels, batch_size, name):
+    def __init__(self, out_channels, name):
         super(VFELayer, self).__init__()
         self.units = out_channels
-        self.batch_size = batch_size
 
     def apply(self, inputs, mask, training):
+        batch_size = inputs.get_shape()[0].value
         # [K, T, 1] -> [K, T, 64]
         mask64 = tf.tile(mask, [1, 1, 64])
 
-        nn_feature = GetNNFeature(inputs, 8, self.batch_size, 'nn_feature')
+        nn_feature = GetNNFeature(inputs, 8, batch_size, 'nn_feature')
         nn_feature = pointcnv(2, nn_feature, 32, 'vfe_nn_conv1', training)
         nn_feature = pointcnv(2, nn_feature, 64, 'vfe_nn_conv2', training, activation=False)
         nn_feature = tf.reduce_max(nn_feature, axis=2, keepdims=False)
@@ -137,11 +137,10 @@ class FeatureNet_PntNet1(object):
         self.coordinate_pl = tf.placeholder(tf.int64, [None, 4], name='coordinate')
 
         Cout = 128
-        self.vfe = VFELayer(Cout, batch_size, 'VFE')
+        self.vfe = VFELayer(Cout, 'VFE')
         voxelwise = self.vfe.apply(self.feature_pl[:,:,:3], self.mask_pl, self.training)
 
         max_intensity = tf.reduce_max(self.feature_pl[:,:,3], axis=-1, keepdims=True)
-        print(max_intensity.shape)
         voxelwise = tf.concat((voxelwise, max_intensity), axis=-1)
 
         self.outputs = tf.scatter_nd(
