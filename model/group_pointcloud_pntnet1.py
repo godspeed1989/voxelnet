@@ -99,9 +99,13 @@ class VFELayer(object):
         # [K, T, 1] -> [K, T, 64]
         mask64 = tf.tile(mask, [1, 1, 64])
 
-        nn_feature = GetNNFeature(inputs, 8, self.batch_size, 'nn_feature')
+        nn = 4
+        nn_feature = GetNNFeature(inputs, nn, self.batch_size, 'nn_feature')
         nn_feature = pointcnv(2, nn_feature, 32, 'vfe_nn_conv1', training)
         nn_feature = pointcnv(2, nn_feature, 64, 'vfe_nn_conv2', training, activation=False)
+        mask_nk = tf.expand_dims(mask, axis=-1)
+        mask_nk = tf.tile(mask_nk, [1, 1, nn, 64])
+        nn_feature = tf.multiply(nn_feature, tf.cast(mask_nk, tf.float32))
         nn_feature = tf.reduce_max(nn_feature, axis=2, keepdims=False)
         nn_feature = tf.multiply(nn_feature, tf.cast(mask64, tf.float32))
 
