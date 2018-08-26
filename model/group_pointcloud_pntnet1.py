@@ -150,7 +150,7 @@ class FeatureNet_PntNet1(object):
         voxelwise = tf.concat((voxelwise, max_intensity, number_vox), axis=-1)
 
         self.outputs = tf.scatter_nd(
-            self.coordinate_pl, voxelwise, [self.batch_size, cfg.GRID_Z_SIZE, cfg.GRID_Y_SIZE, cfg.GRID_X_SIZE, Cout+1])
+            self.coordinate_pl, voxelwise, [self.batch_size, cfg.GRID_Z_SIZE, cfg.GRID_Y_SIZE, cfg.GRID_X_SIZE, Cout+2])
 
 if __name__ == '__main__':
     VOXEL_POINT_COUNT = 50
