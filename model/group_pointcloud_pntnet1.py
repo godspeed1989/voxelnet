@@ -146,7 +146,7 @@ class FeatureNet_PntNet1(object):
         voxelwise = self.vfe.apply(self.feature_pl[:,:,:3], self.mask_pl, self.training)
 
         max_intensity = tf.reduce_max(self.feature_pl[:,:,3], axis=-1, keepdims=True)
-        number_vox = tf.expand_dims(tf.cast(number_pl, tf.float32), axis=-1) / cfg.VOXEL_POINT_COUNT
+        number_vox = tf.expand_dims(tf.cast(self.number_pl, tf.float32), axis=-1) / cfg.VOXEL_POINT_COUNT
         voxelwise = tf.concat((voxelwise, max_intensity, number_vox), axis=-1)
 
         self.outputs = tf.scatter_nd(
