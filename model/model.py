@@ -10,6 +10,7 @@ from config import cfg
 from model.group_pointcloud import FeatureNet
 from model.group_pointcloud_sift import FeatureNetSIFT
 from model.group_pointcloud_pntnet import FeatureNet_PntNet
+from model.group_pointcloud_pntnet1 import FeatureNet_PntNet1
 from model.rpn import MiddleAndRPN
 from utils.rotbox_cuda.rbbox_overlaps import py_rotate_nms_3d
 
@@ -71,6 +72,8 @@ class RPN3D(object):
                         feature = FeatureNetSIFT(training=self.is_train, batch_size=self.single_batch_size)
                     elif cfg.FEATURE_NET_TYPE == 'FeatureNet_PntNet':
                         feature = FeatureNet_PntNet(training=self.is_train, batch_size=self.single_batch_size)
+                    elif cfg.FEATURE_NET_TYPE == 'FeatureNet_PntNet1':
+                        feature = FeatureNet_PntNet1(training=self.is_train, batch_size=self.single_batch_size)
                     #
                     rpn = MiddleAndRPN(input_data=feature.outputs, alpha=self.alpha, beta=self.beta, training=self.is_train)
                     #

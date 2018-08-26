@@ -17,7 +17,7 @@ cfg = __C
 
 # for dataset dir
 __C.USE_AUGED_DATA = True
-__C.REMOVE_GROUND = True
+__C.REMOVE_GROUND = False
 if __C.REMOVE_GROUND:
     __C.AUG_DATA_FOLDER = 'augment_rm_ground'
 else:
@@ -26,8 +26,8 @@ else:
 __C.DATA_DIR = '/mine/KITTI_DAT'
 __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 
-# select FeatureNet / FeatureNetSIFT / FeatureNet_PntNet
-__C.FEATURE_NET_TYPE = 'FeatureNet_PntNet'
+# select FeatureNet / FeatureNetSIFT / FeatureNet_PntNet / FeatureNet_PntNet1
+__C.FEATURE_NET_TYPE = 'FeatureNet_PntNet1'
 
 # select voxelnet / res_sequeeze / res_net / avod
 __C.RPN_TYPE = 'avod'

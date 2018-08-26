@@ -38,7 +38,7 @@ class VFELayer(object):
         # [K, 1, units]
         mask = tf.tile(mask, [1, 1, self.units])
         pc_feature = tf.multiply(pc_feature, tf.cast(mask, tf.float32))
-        # [K, F, units] -> [K, units]
+        # [K, T, units] -> [K, units]
         aggregated = tf.reduce_max(pc_feature, axis=1, keepdims=False)
 
         return aggregated
