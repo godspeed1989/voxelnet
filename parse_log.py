@@ -76,15 +76,13 @@ plt.xticks(  RANGE, range(9, len(RANGE)*10, 10) )
 plt.xticks(fontsize=14)
 
 plt.ylabel('AP', fontsize=16)
-plt.ylim(35, 95)
-plt.yticks( range(35, 95, 5) )
+plt.yticks( range(0, 100, 5) )
 plt.yticks(fontsize=14)
 
 plt.grid(linestyle=linestyles['dotted'])
 
-DIR_NAME = ROOT_DIR.split('/')[-1]
 
-OUTPUT_NAME = DIR_NAME + '.jpg'
+OUTPUT_NAME = 'parse_log' + '.png'
 plt.savefig(OUTPUT_NAME)
 
 print('results parsed and saved in: ' + OUTPUT_NAME)
