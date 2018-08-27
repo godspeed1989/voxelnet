@@ -103,9 +103,6 @@ class VFELayer(object):
         nn_feature = GetNNFeature(inputs, nn, self.batch_size, 'nn_feature')
         nn_feature = pointcnv(2, nn_feature, 32, 'vfe_nn_conv1', training)
         nn_feature = pointcnv(2, nn_feature, 64, 'vfe_nn_conv2', training, activation=False)
-        mask_nk = tf.expand_dims(mask, axis=-1)
-        mask_nk = tf.tile(mask_nk, [1, 1, nn, 64])
-        nn_feature = tf.multiply(nn_feature, tf.cast(mask_nk, tf.float32))
         nn_feature = tf.reduce_max(nn_feature, axis=2, keepdims=False)
         nn_feature = tf.multiply(nn_feature, tf.cast(mask64, tf.float32))
 
@@ -145,7 +142,7 @@ class FeatureNet_PntNet1(object):
         self.coordinate_pl = tf.placeholder(tf.int64, [None, 4], name='coordinate')
 
         total_voxels = tf.reduce_sum(self.voxcnt_pl)
-        Cout = 128
+        Cout = 64
         self.vfe = VFELayer(total_voxels, Cout, 'VFE')
         voxelwise = self.vfe.apply(self.feature_pl[:,:,:3], self.mask_pl, self.training)
 
