@@ -35,6 +35,9 @@ __C.RPN_TYPE = 'avod'
 # select voxelnet / focal_loss
 __C.CLS_LOSS_TYPE = 'voxelnet'
 
+__C.L2_LOSS = True
+__C.L2_LOSS_ALPHA = 0.001
+
 # for gpu allocation
 __C.GPU_AVAILABLE = '0'
 __C.GPU_USE_COUNT = len(__C.GPU_AVAILABLE.split(','))
@@ -65,7 +68,7 @@ if __C.DETECT_OBJ == 'Car':
     __C.VOXEL_POINT_COUNT = 50
     __C.INPUT_WIDTH = __C.GRID_X_SIZE
     __C.INPUT_HEIGHT = __C.GRID_Y_SIZE
-    __C.FEATURE_RATIO = 2
+    __C.FEATURE_RATIO = 1
     __C.FEATURE_WIDTH = int(__C.INPUT_WIDTH / __C.FEATURE_RATIO)
     __C.FEATURE_HEIGHT = int(__C.INPUT_HEIGHT / __C.FEATURE_RATIO)
 else:

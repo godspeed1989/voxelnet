@@ -7,10 +7,6 @@ import tensorflow as tf
 from utils.utils import *
 from utils.colorize import *
 from config import cfg
-from model.group_pointcloud import FeatureNet
-from model.group_pointcloud_sift import FeatureNetSIFT
-from model.group_pointcloud_pntnet import FeatureNet_PntNet
-from model.group_pointcloud_pntnet1 import FeatureNet_PntNet1
 from model.rpn import MiddleAndRPN
 from utils.rotbox_cuda.rbbox_overlaps import py_rotate_nms_3d
 
@@ -68,12 +64,16 @@ class RPN3D(object):
                     # must use name scope here since we do not want to create new variables
                     # graph
                     if cfg.FEATURE_NET_TYPE == 'FeatureNet':
+                        from model.group_pointcloud import FeatureNet
                         feature = FeatureNet(training=self.is_train, batch_size=self.single_batch_size)
                     elif cfg.FEATURE_NET_TYPE == 'FeatureNetSIFT':
+                        from model.group_pointcloud_sift import FeatureNetSIFT
                         feature = FeatureNetSIFT(training=self.is_train, batch_size=self.single_batch_size)
                     elif cfg.FEATURE_NET_TYPE == 'FeatureNet_PntNet':
+                        from model.group_pointcloud_pntnet import FeatureNet_PntNet
                         feature = FeatureNet_PntNet(training=self.is_train, batch_size=self.single_batch_size)
                     elif cfg.FEATURE_NET_TYPE == 'FeatureNet_PntNet1':
+                        from model.group_pointcloud_pntnet1 import FeatureNet_PntNet1
                         feature = FeatureNet_PntNet1(training=self.is_train, batch_size=self.single_batch_size)
                     #
                     rpn = MiddleAndRPN(input_data=feature.outputs, alpha=self.alpha, beta=self.beta, training=self.is_train)
@@ -100,7 +100,12 @@ class RPN3D(object):
                     if idx == 0:
                         self.extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
-                    self.loss = rpn.loss
+                    if cfg.L2_LOSS:
+                        train_vars = tf.trainable_variables()
+                        self.l2_loss = tf.add_n([tf.nn.l2_loss(v) for v in train_vars if 'bias' not in v.name]) * cfg.L2_LOSS_ALPHA
+                        self.loss = rpn.loss + self.l2_loss
+                    else:
+                        self.loss = rpn.loss
                     self.reg_loss = rpn.reg_loss
                     self.cls_loss = rpn.cls_loss
                     self.cls_pos_loss = rpn.cls_pos_loss_rec
@@ -158,6 +163,8 @@ class RPN3D(object):
             tf.summary.scalar('train/cls_pos_loss', self.cls_pos_loss),
             tf.summary.scalar('train/cls_neg_loss', self.cls_neg_loss)
         ]
+        if cfg.L2_LOSS:
+            train_summary_list.append(tf.summary.scalar('train/l2_loss', self.l2_loss))
         if cfg.SUMMART_ALL_VARS:
             train_summary_list.append(*[tf.summary.histogram(each.name, each) for each in self.vars + self.params])
         self.train_summary = tf.summary.merge(train_summary_list)

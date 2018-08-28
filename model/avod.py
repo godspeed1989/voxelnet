@@ -1,5 +1,8 @@
 import tensorflow as tf
 
+if __name__ != '__main__':
+    from config import cfg
+
 def avod(inputs, training):
     # Encoder
     # 1 -> 1/2
@@ -35,16 +38,25 @@ def avod(inputs, training):
     upconv3 = Deconv2D(conv4, Cout=256, k=3, s=(2, 2),
                        pad='same', training=training, name='upconv3')
     concat3 = tf.concat((conv3, upconv3), axis=3, name='concat3')
-    pyramid_fusion3 = Conv2D(concat3, Cout=64, k=3, s=(1, 1),
+    pyramid_fusion3 = Conv2D(concat3, Cout=128, k=3, s=(1, 1),
                              pad='same', training=training, name='pyramid_fusion3')
     # 1/4 -> 1/2
     upconv2 = Deconv2D(pyramid_fusion3, Cout=128, k=3, s=(2, 2),
                        pad='same', training=training, name='upconv2')
     concat2 = tf.concat((conv2, upconv2), axis=3, name='concat2')
-    pyramid_fusion2 = Conv2D(concat2, Cout=32, k=3, s=(1, 1),
+    pyramid_fusion2 = Conv2D(concat2, Cout=64, k=3, s=(1, 1),
                              pad='same', training=training, name='pyramid_fusion2')
+    if cfg.FEATURE_RATIO == 2:
+        return pyramid_fusion2
 
-    return pyramid_fusion2
+    # 1/2 -> 1
+    upconv1 = Deconv2D(pyramid_fusion2, Cout=64, k=3, s=(2, 2),
+                       pad='same', training=training, name='upconv1')
+    concat1 = tf.concat((conv1, upconv1), axis=3, name='concat1')
+    pyramid_fusion1 = Conv2D(concat1, Cout=32, k=3, s=(1, 1),
+                             pad='same', training=training, name='pyramid_fusion1')
+
+    return pyramid_fusion1
 
 def Conv2D(inputs, Cout, k, s, pad, training, activation=True, bn=True, name='conv'):
     with tf.variable_scope(name) as scope:

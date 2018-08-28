@@ -108,7 +108,7 @@ def main(_):
             is_summary, is_summary_image, is_validate = False, False, False
 
             summary_interval = 5
-            summary_val_interval = 10
+            summary_val_interval = 20
             summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
 
             parameter_num = np.sum([np.prod(v.shape.as_list()) for v in tf.trainable_variables()])
