@@ -52,6 +52,8 @@ class FeatureNet(object):
         self.feature_pl = tf.placeholder(tf.float32, [None, cfg.VOXEL_POINT_COUNT, cfg.POINT_FEATURE_LEN], name='feature')
         # [K]
         self.number_pl = tf.placeholder(tf.int64, [None], name='number')
+        # []
+        self.voxcnt_pl = tf.placeholder(tf.int64, [None], name='total_voxel_cnt')
         # [K, T, 1]
         self.mask_pl = tf.placeholder(tf.bool, [None, cfg.VOXEL_POINT_COUNT, 1], name='mask')
         # [K, 4], each row stores (batch, d, h, w)

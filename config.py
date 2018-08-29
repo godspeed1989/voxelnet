@@ -27,7 +27,7 @@ __C.DATA_DIR = '/mine/KITTI_DAT'
 __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 
 # select FeatureNet / FeatureNetSIFT / FeatureNet_PntNet / FeatureNet_PntNet1
-__C.FEATURE_NET_TYPE = 'FeatureNet_PntNet1'
+__C.FEATURE_NET_TYPE = 'FeatureNet'
 
 # select voxelnet / res_sequeeze / res_net / avod
 __C.RPN_TYPE = 'avod'
@@ -35,7 +35,7 @@ __C.RPN_TYPE = 'avod'
 # select voxelnet / focal_loss
 __C.CLS_LOSS_TYPE = 'voxelnet'
 
-__C.L2_LOSS = True
+__C.L2_LOSS = False
 __C.L2_LOSS_ALPHA = 0.001
 
 # for gpu allocation

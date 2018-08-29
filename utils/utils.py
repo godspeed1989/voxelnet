@@ -8,8 +8,10 @@ import shapely.affinity
 import math
 
 from config import cfg
-from utils.box_overlaps import bbox_overlaps
-from utils.rotbox_cuda.rbbox_overlaps import py_rbbox_overlaps_3d
+if cfg.IOU_TYPE == '2d_standup':
+    from utils.box_overlaps import bbox_overlaps
+else:
+    from utils.rotbox_cuda.rbbox_overlaps import py_rbbox_overlaps_3d
 
 
 #-- util function to load calib matrices
