@@ -71,6 +71,31 @@ def filter_ground(pc_velo_orig):
             break
     return g_ground_pc, g_not_ground_pc
 
+def in_hull(p, hull):
+    from scipy.spatial import Delaunay
+    if not isinstance(hull,Delaunay):
+        hull = Delaunay(hull)
+    return hull.find_simplex(p)>=0
+
+def extract_pc_in_box3d(pc, box3d):
+    ''' pc: (N,3), box3d: (n,3) '''
+    box3d_roi_inds = in_hull(pc[:,:3], box3d)
+    return pc[box3d_roi_inds,:], box3d_roi_inds
+
+def extract_pc_in_fov(pc):
+    y = cfg.X_MAX * np.tan(cfg.FOV*np.pi/180)
+    bbox = [[cfg.X_MIN,  0, cfg.Z_MIN], [cfg.X_MIN,  0, cfg.Z_MAX],
+            [cfg.X_MAX,  y, cfg.Z_MAX], [cfg.X_MAX,  y, cfg.Z_MIN],
+            [cfg.X_MAX, -y, cfg.Z_MIN], [cfg.X_MAX, -y, cfg.Z_MAX]]
+    points, inds = extract_pc_in_box3d(pc, bbox)
+    return points, inds
+
+def extract_lidar_in_fov(lidar):
+    points, fov_inds = extract_pc_in_fov(lidar[:,:3])
+    intensity = np.expand_dims(lidar[fov_inds, 3], axis=-1)
+    fov_lidar = np.concatenate([points, intensity], axis=1)
+    return fov_lidar
+
 def process_pointcloud(tag, lidar, cls=cfg.DETECT_OBJ):
     # Input:
     #   (N, 4)
@@ -83,13 +108,16 @@ def process_pointcloud(tag, lidar, cls=cfg.DETECT_OBJ):
     # (X, Y, Z)
     lidar_coord = np.array([cfg.X_MIN, cfg.Y_MIN, cfg.Z_MIN], dtype=np.float32)
 
-    np.random.shuffle(lidar)
+    if cfg.FOV_FILTER:
+        lidar = extract_lidar_in_fov(lidar)
 
     if cfg.REMOVE_GROUND:
         _, point_cloud = filter_ground(lidar)
     else:
         point_cloud = lidar
     assert point_cloud.shape[0], 'ERROR size {}'.format(tag)
+
+    np.random.shuffle(point_cloud)
 
     shifted_coord = point_cloud[:, :3] - lidar_coord
     # reverse the point cloud coordinate (X, Y, Z) -> (Z, Y, X)

@@ -22,6 +22,10 @@ if __C.REMOVE_GROUND:
     __C.AUG_DATA_FOLDER = 'augment_rm_ground'
 else:
     __C.AUG_DATA_FOLDER = 'augment_data'
+__C.FOV_FILTER = True
+__C.FOV = 45
+if __C.FOV_FILTER:
+    __C.AUG_DATA_FOLDER += '_fov'
 
 __C.DATA_DIR = '/mine/KITTI_DAT'
 __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'

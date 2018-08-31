@@ -8,7 +8,7 @@ import glob
 from config import cfg
 from utils.data_aug import aug_data
 
-object_dirs = [('/mine/KITTI_DAT/training', True),
+object_dirs = [('/mine/KITTI_DAT/training', False),
                ('/mine/KITTI_DAT/validation', False)]
 output_dir = cfg.AUG_DATA_FOLDER
 
