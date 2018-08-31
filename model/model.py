@@ -75,6 +75,9 @@ class RPN3D(object):
                     elif cfg.FEATURE_NET_TYPE == 'FeatureNet_PntNet1':
                         from model.group_pointcloud_pntnet1 import FeatureNet_PntNet1
                         feature = FeatureNet_PntNet1(training=self.is_train, batch_size=self.single_batch_size)
+                    elif cfg.FEATURE_NET_TYPE == 'FeatureNet_Simple':
+                        from model.group_pointcloud_simple import FeatureNet_Simple
+                        feature = FeatureNet_Simple(training=self.is_train, batch_size=self.single_batch_size)
                     #
                     rpn = MiddleAndRPN(input_data=feature.outputs, alpha=self.alpha, beta=self.beta, training=self.is_train)
                     #

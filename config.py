@@ -26,8 +26,9 @@ else:
 __C.DATA_DIR = '/mine/KITTI_DAT'
 __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 
-# select FeatureNet / FeatureNetSIFT / FeatureNet_PntNet / FeatureNet_PntNet1
-__C.FEATURE_NET_TYPE = 'FeatureNet'
+# select FeatureNet / FeatureNetSIFT / FeatureNet_PntNet /
+#        FeatureNet_PntNet1 / FeatureNet_Simple
+__C.FEATURE_NET_TYPE = 'FeatureNet_Simple'
 
 # select voxelnet / res_sequeeze / res_net / avod
 __C.RPN_TYPE = 'avod'
