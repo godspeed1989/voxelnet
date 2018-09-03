@@ -104,6 +104,13 @@ def main(_):
                 log_print("Created model with fresh parameters.")
                 tf.global_variables_initializer().run()
 
+            if cfg.FEATURE_NET_TYPE == 'FeatureNet_AE' and cfg.FeatureNet_AE_WPATH:
+                ae_checkpoint_file = tf.train.latest_checkpoint(cfg.FeatureNet_AE_WPATH)
+                log_print("Load Pretrained FeatureNet_AE weights %s" % ae_checkpoint_file)
+                ae_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='ae_encoder')
+                ae_saver = tf.train.Saver(var_list={v.op.name: v for v in ae_vars})
+                ae_saver.restore(sess, ae_checkpoint_file)
+
             # train and validate
             is_summary, is_summary_image, is_validate = False, False, False
 

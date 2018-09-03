@@ -9,15 +9,15 @@ else:
     cfg = edict()
     cfg.VOXEL_POINT_COUNT = 50
 
-def pointconv(pc_feature, Cout, scope, training, activation=True):
+def pointconv(pc_feature, Cout, scope, training, activation=True, trainable=True):
     """
     Input: (B,N,C)
     Return: (B,N,Cout)
     """
     with tf.variable_scope(scope):
-        pc_feature = tf.layers.conv1d(pc_feature, Cout, kernel_size=1, strides=1,
+        pc_feature = tf.layers.conv1d(pc_feature, Cout, kernel_size=1, strides=1, trainable=trainable,
                                       padding="valid", reuse=tf.AUTO_REUSE, name='conv1d')
-        pc_feature = tf.layers.batch_normalization(pc_feature, axis=-1,
+        pc_feature = tf.layers.batch_normalization(pc_feature, axis=-1, trainable=trainable,
                         fused=True, training=training, reuse=tf.AUTO_REUSE, name='bn')
         if activation:
             return tf.nn.relu(pc_feature)
@@ -43,17 +43,17 @@ def pointdeconv(pc_feature, Cout, scope, kernel_size, strides, training, activat
 Input: (B,N,C)
 Return: (B,Cout)
 """
-def ae_encoder(inputs, mask, training):
+def ae_encoder(inputs, mask, training, trainable=True):
     with tf.variable_scope('ae_encoder'):
-        pc_feature = pointconv(inputs, 32, 'encoder_conv1', training)
-        pc_feature = pointconv(pc_feature, 64, 'encoder_conv2', training)
+        pc_feature = pointconv(inputs, 32, 'encoder_conv1', training, trainable=trainable)
+        pc_feature = pointconv(pc_feature, 64, 'encoder_conv2', training, trainable=trainable)
         # [K, T, 1] -> [K, T, 64]
         mask64 = tf.tile(mask, [1, 1, 64])
         pc_feature = tf.multiply(pc_feature, tf.cast(mask64, tf.float32))
 
         feature = tf.concat([inputs, pc_feature], axis=-1)
-        feature = pointconv(feature, 128, 'encoder_conv3', training)
-        feature = pointconv(feature, 256, 'encoder_conv4', training, activation=False)
+        feature = pointconv(feature, 128, 'encoder_conv3', training, trainable=trainable)
+        feature = pointconv(feature, 256, 'encoder_conv4', training, trainable=trainable)
 
         # [K, T, 1] -> [K, T, 256]
         mask256 = tf.tile(mask, [1, 1, 256])
@@ -64,7 +64,7 @@ def ae_encoder(inputs, mask, training):
         pointsize = tf.reduce_sum(tf.cast(mask, tf.float32), axis=1, keepdims=False)
         aggregated = tf.concat([aggregated, pointsize], axis=-1)
 
-        aggregated = tf.layers.dense(aggregated, 256, activation=tf.nn.relu)
+        aggregated = tf.layers.dense(aggregated, 256, activation=tf.nn.relu, trainable=trainable)
 
         return aggregated
 
@@ -119,10 +119,13 @@ if __name__ == '__main__':
     dists_forward, _, dists_backward, _ = nn_distance(result, point_cloud_pl)
     loss_pred = tf.reduce_mean(dists_forward + dists_backward)
     tf.summary.scalar('loss_pred', loss_pred)
-    tvars = tf.trainable_variables() 
-    lossL1 = tf.add_n([ tf.reduce_sum(tf.abs(v)) for v in tvars if 'bias' not in v.name]) * 0.001
-    tf.summary.scalar('lossL1', lossL1)
-    loss = loss_pred + lossL1
+    if False:
+        tvars = tf.trainable_variables()
+        lossL1 = tf.add_n([ tf.reduce_sum(tf.abs(v)) for v in tvars if 'bias' not in v.name]) * 0.001
+        tf.summary.scalar('lossL1', lossL1)
+        loss = loss_pred + lossL1
+    else:
+        loss = loss_pred
     train = tf.train.AdamOptimizer(learning_rate=0.00005).minimize(loss)
 
     saver = tf.train.Saver(max_to_keep=2)

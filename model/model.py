@@ -78,6 +78,9 @@ class RPN3D(object):
                     elif cfg.FEATURE_NET_TYPE == 'FeatureNet_Simple':
                         from model.group_pointcloud_simple import FeatureNet_Simple
                         feature = FeatureNet_Simple(training=self.is_train, batch_size=self.single_batch_size)
+                    elif cfg.FEATURE_NET_TYPE == 'FeatureNet_AE':
+                        from model.group_pointcloud_ae import FeatureNet_AE
+                        feature = FeatureNet_AE(training=self.is_train, batch_size=self.single_batch_size, trainable=False)
                     #
                     rpn = MiddleAndRPN(input_data=feature.outputs, alpha=self.alpha, beta=self.beta, training=self.is_train)
                     #
@@ -103,12 +106,15 @@ class RPN3D(object):
                     if idx == 0:
                         self.extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
+                    self.loss = rpn.loss
                     if cfg.L2_LOSS:
                         train_vars = tf.trainable_variables()
                         self.l2_loss = tf.add_n([tf.nn.l2_loss(v) for v in train_vars if 'bias' not in v.name]) * cfg.L2_LOSS_ALPHA
-                        self.loss = rpn.loss + self.l2_loss
-                    else:
-                        self.loss = rpn.loss
+                        self.loss = self.loss + self.l2_loss
+                    if cfg.L1_LOSS:
+                        train_vars = tf.trainable_variables()
+                        self.l1_loss = tf.add_n([tf.reduce_sum(tf.abs(v)) for v in train_vars if 'bias' not in v.name]) * cfg.L1_LOSS_ALPHA
+                        self.loss = self.loss + self.l1_loss
                     self.reg_loss = rpn.reg_loss
                     self.cls_loss = rpn.cls_loss
                     self.cls_pos_loss = rpn.cls_pos_loss_rec
@@ -168,6 +174,8 @@ class RPN3D(object):
         ]
         if cfg.L2_LOSS:
             train_summary_list.append(tf.summary.scalar('train/l2_loss', self.l2_loss))
+        if cfg.L1_LOSS:
+            train_summary_list.append(tf.summary.scalar('train/l1_loss', self.l1_loss))
         if cfg.SUMMART_ALL_VARS:
             train_summary_list.append(*[tf.summary.histogram(each.name, each) for each in self.vars + self.params])
         self.train_summary = tf.summary.merge(train_summary_list)

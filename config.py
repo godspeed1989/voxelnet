@@ -16,7 +16,7 @@ __C = edict()
 cfg = __C
 
 # for dataset dir
-__C.USE_AUGED_DATA = True
+__C.USE_AUGED_DATA = False
 __C.REMOVE_GROUND = False
 if __C.REMOVE_GROUND:
     __C.AUG_DATA_FOLDER = 'augment_rm_ground'
@@ -31,8 +31,10 @@ __C.DATA_DIR = '/mine/KITTI_DAT'
 __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 
 # select FeatureNet / FeatureNetSIFT / FeatureNet_PntNet /
-#        FeatureNet_PntNet1 / FeatureNet_Simple
-__C.FEATURE_NET_TYPE = 'FeatureNet_Simple'
+#        FeatureNet_PntNet1 / FeatureNet_Simple / FeatureNet_AE
+__C.FEATURE_NET_TYPE = 'FeatureNet_AE'
+
+__C.FeatureNet_AE_WPATH = './pntae'
 
 # select voxelnet / res_sequeeze / res_net / avod
 __C.RPN_TYPE = 'avod'
@@ -42,6 +44,9 @@ __C.CLS_LOSS_TYPE = 'voxelnet'
 
 __C.L2_LOSS = False
 __C.L2_LOSS_ALPHA = 0.001
+
+__C.L1_LOSS = False
+__C.L1_LOSS_ALPHA = 0.001
 
 # for gpu allocation
 __C.GPU_AVAILABLE = '0'
@@ -73,7 +78,7 @@ if __C.DETECT_OBJ == 'Car':
     __C.VOXEL_POINT_COUNT = 50
     __C.INPUT_WIDTH = __C.GRID_X_SIZE
     __C.INPUT_HEIGHT = __C.GRID_Y_SIZE
-    __C.FEATURE_RATIO = 1
+    __C.FEATURE_RATIO = 2
     __C.FEATURE_WIDTH = int(__C.INPUT_WIDTH / __C.FEATURE_RATIO)
     __C.FEATURE_HEIGHT = int(__C.INPUT_HEIGHT / __C.FEATURE_RATIO)
 else:
