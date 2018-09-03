@@ -117,8 +117,12 @@ if __name__ == '__main__':
     sys.path.append(os.path.join(BASE_DIR, 'nn_distance'))
     from tf_nndistance import nn_distance
     dists_forward, _, dists_backward, _ = nn_distance(result, point_cloud_pl)
-    loss = tf.reduce_mean(dists_forward + dists_backward)
-    tf.summary.scalar('loss', loss)
+    loss_pred = tf.reduce_mean(dists_forward + dists_backward)
+    tf.summary.scalar('loss_pred', loss_pred)
+    tvars = tf.trainable_variables() 
+    lossL1 = tf.add_n([ tf.reduce_sum(tf.abs(v)) for v in tvars if 'bias' not in v.name]) * 0.001
+    tf.summary.scalar('lossL1', lossL1)
+    loss = loss_pred + lossL1
     train = tf.train.AdamOptimizer(learning_rate=0.00005).minimize(loss)
 
     saver = tf.train.Saver(max_to_keep=2)
