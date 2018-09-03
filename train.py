@@ -32,7 +32,7 @@ parser.add_argument('-n', '--tag', type=str, nargs='?', default='default',
                     help='set log tag')
 parser.add_argument('-b', '--single-batch-size', type=int, nargs='?', default=2,
                     help='set batch size')
-parser.add_argument('-l', '--lr', type=float, nargs='?', default=0.001,
+parser.add_argument('-l', '--lr', type=float, nargs='?', default=0.0005,
                     help='set learning rate')
 parser.add_argument('-al', '--alpha', type=float, nargs='?', default=1.0,
                     help='set alpha in los function')
