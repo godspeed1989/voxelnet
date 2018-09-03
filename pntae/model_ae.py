@@ -90,8 +90,8 @@ def ae_decoder(feature, mask, training):
         return deconv
 
 def pntnet_ae(inputs, mask, training):
-    codec = ae_encoder(inputs, mask_pl, training)
-    result = ae_decoder(codec, mask_pl, training)
+    codec = ae_encoder(inputs, mask, training)
+    result = ae_decoder(codec, mask, training)
     return result
 
 if __name__ == '__main__':
