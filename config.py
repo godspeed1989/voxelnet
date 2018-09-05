@@ -65,8 +65,8 @@ if __C.DETECT_OBJ == 'Car':
     __C.Y_MAX = 40
     __C.X_MIN = 0
     __C.X_MAX = 70.4
-    __C.VOXEL_Y_SIZE = 0.2
-    __C.VOXEL_X_SIZE = 0.2
+    __C.VOXEL_Y_SIZE = 0.1
+    __C.VOXEL_X_SIZE = 0.1
     __C.GRID_Y_SIZE = int((__C.Y_MAX - __C.Y_MIN) / __C.VOXEL_Y_SIZE)
     __C.GRID_X_SIZE = int((__C.X_MAX - __C.X_MIN) / __C.VOXEL_X_SIZE)
     if __C.VOXEL_Z_ONE:
@@ -75,10 +75,10 @@ if __C.DETECT_OBJ == 'Car':
     else:
         __C.VOXEL_Z_SIZE = 0.4
         __C.GRID_Z_SIZE = int((__C.Z_MAX - __C.Z_MIN) / __C.VOXEL_Z_SIZE)
-    __C.VOXEL_POINT_COUNT = 50
+    __C.VOXEL_POINT_COUNT = 16
     __C.INPUT_WIDTH = __C.GRID_X_SIZE
     __C.INPUT_HEIGHT = __C.GRID_Y_SIZE
-    __C.FEATURE_RATIO = 2
+    __C.FEATURE_RATIO = 4
     __C.FEATURE_WIDTH = int(__C.INPUT_WIDTH / __C.FEATURE_RATIO)
     __C.FEATURE_HEIGHT = int(__C.INPUT_HEIGHT / __C.FEATURE_RATIO)
 else:

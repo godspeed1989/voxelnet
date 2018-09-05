@@ -10,7 +10,7 @@ import tensorflow as tf
 from itertools import count
 
 from config import cfg
-from model import RPN3D
+from model.model import RPN3D
 from utils.kitti_loader import iterate_data, sample_test_data
 from utils.utils import box3d_to_label
 from train_hook import check_if_should_pause

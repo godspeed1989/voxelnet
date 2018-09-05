@@ -40,6 +40,9 @@ def avod(inputs, training):
     concat3 = tf.concat((conv3, upconv3), axis=3, name='concat3')
     pyramid_fusion3 = Conv2D(concat3, Cout=128, k=3, s=(1, 1),
                              pad='same', training=training, name='pyramid_fusion3')
+    if cfg.FEATURE_RATIO == 4:
+        return pyramid_fusion3
+
     # 1/4 -> 1/2
     upconv2 = Deconv2D(pyramid_fusion3, Cout=128, k=3, s=(2, 2),
                        pad='same', training=training, name='upconv2')

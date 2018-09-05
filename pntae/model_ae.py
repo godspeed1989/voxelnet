@@ -83,9 +83,10 @@ def ae_decoder(feature, mask, training):
         deconv = pointdeconv(deconv, 64, 'decoder_deconv2',
                             kernel_size=[3,3], strides=[1,1], training=training)
         # 4x4 -> 5x10
-        deconv = pointdeconv(deconv, 3, 'decoder_deconv3',
-                            kernel_size=[2,7], strides=[1,1], training=training)
-
+        #deconv = pointdeconv(deconv, 3, 'decoder_deconv3',
+        #                    kernel_size=[2,7], strides=[1,1], training=training)
+        deconv = tf.layers.conv2d(deconv, 3, kernel_size=1, strides=1,
+                                    padding="valid", reuse=tf.AUTO_REUSE, name='decoder_deconv3')
         deconv = tf.reshape(deconv, [-1, cfg.VOXEL_POINT_COUNT, 3])
         return deconv
 
