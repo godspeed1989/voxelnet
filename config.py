@@ -31,10 +31,11 @@ __C.DATA_DIR = '/mine/KITTI_DAT'
 __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 
 # select FeatureNet / FeatureNetSIFT / FeatureNet_PntNet /
-#        FeatureNet_PntNet1 / FeatureNet_Simple / FeatureNet_AE
-__C.FEATURE_NET_TYPE = 'FeatureNet_AE'
+#        FeatureNet_PntNet1 / FeatureNet_Simple / FeatureNet_AE / FeatureNet_VAE
+__C.FEATURE_NET_TYPE = 'FeatureNet_VAE'
 
 __C.FeatureNet_AE_WPATH = './pntae'
+__C.FeatureNet_VAE_WPATH = './voxae'
 
 # select voxelnet / res_sequeeze / res_net / avod
 __C.RPN_TYPE = 'avod'
@@ -65,17 +66,17 @@ if __C.DETECT_OBJ == 'Car':
     __C.Y_MAX = 40
     __C.X_MIN = 0
     __C.X_MAX = 70.4
-    __C.VOXEL_Y_SIZE = 0.1
-    __C.VOXEL_X_SIZE = 0.1
+    __C.VOXEL_Y_SIZE = 0.2
+    __C.VOXEL_X_SIZE = 0.2
     __C.GRID_Y_SIZE = int((__C.Y_MAX - __C.Y_MIN) / __C.VOXEL_Y_SIZE)
     __C.GRID_X_SIZE = int((__C.X_MAX - __C.X_MIN) / __C.VOXEL_X_SIZE)
     if __C.VOXEL_Z_ONE:
-        __C.VOXEL_Z_SIZE = __C.Z_MAX - __C.Z_MIN
+        __C.VOXEL_Z_SIZE = __C.Z_MAX - __C.Z_MIN # 4
         __C.GRID_Z_SIZE = 1
     else:
         __C.VOXEL_Z_SIZE = 0.4
         __C.GRID_Z_SIZE = int((__C.Z_MAX - __C.Z_MIN) / __C.VOXEL_Z_SIZE)
-    __C.VOXEL_POINT_COUNT = 16
+    __C.VOXEL_POINT_COUNT = 64
     __C.INPUT_WIDTH = __C.GRID_X_SIZE
     __C.INPUT_HEIGHT = __C.GRID_Y_SIZE
     __C.FEATURE_RATIO = 4
@@ -94,6 +95,11 @@ else:
     __C.FEATURE_RATIO = 2
     __C.FEATURE_WIDTH = int(__C.INPUT_WIDTH / __C.FEATURE_RATIO)
     __C.FEATURE_HEIGHT = int(__C.INPUT_HEIGHT / __C.FEATURE_RATIO)
+
+__C.VOXVOX_SIZE = np.array([0.05, 0.05, 0.5], dtype=np.float32)
+__C.VOXVOX_GRID_SIZE = np.array([__C.VOXEL_X_SIZE // (__C.VOXVOX_SIZE[0] - 1e-5),
+                                 __C.VOXEL_Y_SIZE // (__C.VOXVOX_SIZE[1] - 1e-5),
+                                 __C.VOXEL_Z_SIZE // (__C.VOXVOX_SIZE[2] - 1e-5)], dtype=np.int32)
 
 # paper is 7
 # 4 = z, y, x, inte

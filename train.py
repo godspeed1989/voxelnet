@@ -110,6 +110,12 @@ def main(_):
                 ae_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='ae_encoder')
                 ae_saver = tf.train.Saver(var_list={v.op.name: v for v in ae_vars})
                 ae_saver.restore(sess, ae_checkpoint_file)
+            if cfg.FEATURE_NET_TYPE == 'FeatureNet_VAE' and cfg.FeatureNet_VAE_WPATH:
+                vae_checkpoint_file = tf.train.latest_checkpoint(cfg.FeatureNet_VAE_WPATH)
+                log_print("Load Pretrained FeatureNet_VAE weights %s" % vae_checkpoint_file)
+                vae_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='vae_encoder')
+                vae_saver = tf.train.Saver(var_list={v.op.name: v for v in vae_vars})
+                vae_saver.restore(sess, vae_checkpoint_file)
 
             # train and validate
             is_summary, is_summary_image, is_validate = False, False, False

@@ -81,6 +81,9 @@ class RPN3D(object):
                     elif cfg.FEATURE_NET_TYPE == 'FeatureNet_AE':
                         from model.group_pointcloud_ae import FeatureNet_AE
                         feature = FeatureNet_AE(training=self.is_train, batch_size=self.single_batch_size, trainable=True)
+                    elif cfg.FEATURE_NET_TYPE == 'FeatureNet_VAE':
+                        from model.group_pointcloud_vae import FeatureNet_VAE
+                        feature = FeatureNet_VAE(training=self.is_train, batch_size=self.single_batch_size, trainable=True)
                     #
                     rpn = MiddleAndRPN(input_data=feature.outputs, alpha=self.alpha, beta=self.beta, training=self.is_train)
                     #
