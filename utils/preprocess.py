@@ -120,7 +120,7 @@ def process_pointcloud(tag, lidar, cls=cfg.DETECT_OBJ):
     np.random.shuffle(point_cloud)
 
     shifted_coord = point_cloud[:, :3] - lidar_coord
-    # reverse the point cloud coordinate (X, Y, Z) -> (Z, Y, X)
+    # reverse the voxel coordinate (X, Y, Z) -> (Z, Y, X)
     # get voxel indice for each point
     voxel_index = np.floor(
         shifted_coord[:, ::-1] / voxel_size).astype(np.int)
@@ -150,7 +150,7 @@ def process_pointcloud(tag, lidar, cls=cfg.DETECT_OBJ):
     mask_buffer = np.zeros(shape=(K, cfg.VOXEL_POINT_COUNT, 1), dtype=np.bool)
 
     # build a reverse index for coordinate buffer
-    index_buffer = {} # 从voxe_indice 到 K 的反向索引dict
+    index_buffer = {} # 从voxel_indice 到 K 的反向索引dict
     for i in range(K):
         index_buffer[tuple(coordinate_buffer[i])] = i
 
@@ -162,9 +162,10 @@ def process_pointcloud(tag, lidar, cls=cfg.DETECT_OBJ):
             feature_buffer[index, number, :4] = point
             number_buffer[index] += 1
             mask_buffer[index, number, 0] = True
+            voxel_center = (voxel*voxel_size + voxel_size*.5)[::-1] # ZYX -> XYZ
             # centroid points in a voxel
             if cfg.POINT_FEATURE_LEN == 4:
-                feature_buffer[index, number, :3] = point[:3] - voxel*voxel_size + voxel_size*.5
+                feature_buffer[index, number, :3] = point[:3] - voxel_center
 
     if cfg.POINT_FEATURE_LEN == 7:
         # TODO: zero pad is substracted too
