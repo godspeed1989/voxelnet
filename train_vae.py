@@ -4,10 +4,11 @@ import os, glob
 import tensorflow as tf
 
 from utils.preprocess import process_pointcloud
+from utils.colorize import colorize
 from voxae.model_ae import voxnet_ae
 from config import cfg
 
-batch_size = 64
+batch_size = 32
 
 def gen_batch(f_lidar):
     lidar = np.fromfile(f_lidar, dtype=np.float32).reshape((-1, 4))
@@ -21,6 +22,12 @@ def gen_batch(f_lidar):
     batch_mask = voxel_dict['mask_buffer'][index]
     return batch_pc, batch_mask
 
+def batch_to_img(b):
+    b = np.sum(b, axis=3, keepdims=False)
+    b = np.reshape(b, [batch_size, cfg.VOXVOX_GRID_SIZE[0]*cfg.VOXVOX_GRID_SIZE[1], 1])
+    b = np.transpose(b, axes=[1,0,2])
+    return colorize(b)[np.newaxis, ...]
+
 def train():
     point_cloud_pl = tf.placeholder(tf.float32, [None, cfg.VOXEL_POINT_COUNT, 4])
     mask_pl = tf.placeholder(tf.bool, [None, cfg.VOXEL_POINT_COUNT, 1])
@@ -29,17 +36,20 @@ def train():
     result, voxels = voxnet_ae(point_cloud_pl, mask_pl, training)
     if True:
         loss_pred = tf.abs(result - voxels)
-        nonzero_sum = tf.reduce_sum(tf.cast(mask_pl, tf.float32), axis=1, keepdims=True)
-        nonzero_sum = tf.expand_dims(nonzero_sum, axis=-1)
-        nonzero_sum = tf.expand_dims(nonzero_sum, axis=-1)
-        nonzero_sum = np.product(cfg.VOXVOX_GRID_SIZE) - nonzero_sum
-        loss_pred = loss_pred / nonzero_sum
         loss_pred = tf.reduce_sum(loss_pred)
-    tf.summary.scalar('loss_pred', loss_pred)
+
+    pred_summary = tf.summary.merge([
+        tf.summary.scalar('loss_pred', loss_pred)
+    ])
     train = tf.train.AdamOptimizer(learning_rate=0.0005).minimize(loss_pred)
 
+    pred_img_pl = tf.placeholder(tf.uint8, [None, cfg.VOXVOX_GRID_SIZE[0]*cfg.VOXVOX_GRID_SIZE[1], batch_size, 3])
+    vox_img_pl = tf.placeholder(tf.uint8, [None, cfg.VOXVOX_GRID_SIZE[0]*cfg.VOXVOX_GRID_SIZE[1], batch_size, 3])
+    img_summary = tf.summary.merge([
+        tf.summary.image('pred_img', pred_img_pl),
+        tf.summary.image('vox_img', vox_img_pl)
+    ])
     sess = tf.Session()
-    summary = tf.summary.merge_all()
     sess.run(tf.global_variables_initializer())
     train_writer = tf.summary.FileWriter('./voxae/', sess.graph)
     saver = tf.train.Saver(max_to_keep=2)
@@ -50,15 +60,21 @@ def train():
     print('Total {} file'.format(len(f_lidar)))
 
     best_loss, step = 1e20, 0
-    for epoch in range(2):
+    for epoch in range(10):
         for f in f_lidar:
             point_cloud, mask = gen_batch(f)
             if point_cloud is None:
                 continue
             step = step + 1
-            loss_val, _, pred_summary_val = sess.run([loss_pred, train, summary],
+
+            loss_val, _, pred_summary_val, pred, voxel = sess.run([loss_pred, train, pred_summary, result, voxels],
                 {point_cloud_pl: point_cloud, mask_pl: mask, training: True})
             train_writer.add_summary(pred_summary_val, step)
+
+            img_summary_val = sess.run(img_summary,
+                {pred_img_pl: batch_to_img(pred), vox_img_pl: batch_to_img(voxel)})
+            train_writer.add_summary(img_summary_val, step)
+
             if step and step % 100 == 0:
                 print(step, loss_val)
                 if loss_val < best_loss:

@@ -46,7 +46,9 @@ class FeatureNet_VAE(object):
 
         voxels = pc_to_voxel(self.feature_pl, self.mask_pl)
         #
-        self.voxelwise = ae_encoder(voxels, training, trainable)
+        codec = ae_encoder(voxels, training, trainable)
+        max_intensity = tf.reduce_max(self.feature_pl[:,:,3], axis=-1, keepdims=True)
+        self.voxelwise = tf.concat((codec, max_intensity), axis=-1)
 
         Cout = self.voxelwise.get_shape()[-1].value
         self.outputs = tf.scatter_nd(

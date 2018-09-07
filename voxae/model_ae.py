@@ -54,17 +54,21 @@ def ae_encoder(inputs, training, trainable=True):
         vox_feature = conv3d(vox_feature, 2, 1, 64, 'encoder_conv3', training, trainable)
         vox_feature = tf.squeeze(vox_feature, axis=[1,2])
         vox_feature = tf.reduce_max(vox_feature, axis=1, keepdims=False)
-        #vox_feature = tf.layers.dense(vox_feature, 64, activation=tf.nn.relu, name='fc', trainable=trainable)
+        vox_feature = tf.layers.dense(vox_feature, 64, activation=tf.nn.relu, name='fc', trainable=trainable)
+        '''
+        vox_feature = tf.reshape(inputs, [-1, np.product(tuple(cfg.VOXVOX_GRID_SIZE))])
+        vox_feature = tf.layers.dense(vox_feature, 128, activation=tf.nn.relu, name='fc1', trainable=trainable)
+        vox_feature = tf.nn.dropout(vox_feature, keep_prob=0.5)
+        vox_feature = tf.layers.dense(vox_feature, 64, activation=tf.nn.relu, name='fc2', trainable=trainable)
+        '''
         return vox_feature
 
 def ae_decoder(feature, training):
     with tf.variable_scope('vae_decoder'):
-        feature = tf.expand_dims(feature, axis=1)
-        feature = tf.expand_dims(feature, axis=1)
-        feature = tf.expand_dims(feature, axis=1)
-        feature = deconv3d(feature, [2,2,3], 1, 32, 'decoder_deconv1', training)
-        feature = deconv3d(feature, [2,2,3], 1, 16, 'decoder_deconv2', training)
-        feature = deconv3d(feature, [2,2,4], 1, 1, 'decoder_deconv3', training)
+        feature = tf.layers.dense(feature, 64, activation=tf.nn.relu, name='fc1')
+        feature = tf.nn.dropout(feature, keep_prob=0.5)
+        feature = tf.layers.dense(feature, 128, activation=tf.nn.relu, name='fc2')
+        feature = tf.reshape(feature, [-1, *tuple(cfg.VOXVOX_GRID_SIZE), 1])
         return feature
 
 """
@@ -97,8 +101,7 @@ def py_pc_to_voxel(pc_in, mask_in):
         #
         voxel = np.zeros(cfg.VOXVOX_GRID_SIZE, dtype=np.float32)
         for v, p in zip(voxel_index, pc):
-            if voxel[tuple(v)] < p[3]:
-                voxel[tuple(v)] = p[3]
+            voxel[tuple(v)] = 1
         voxel = np.expand_dims(voxel, axis=0)
         voxel = np.expand_dims(voxel, axis=-1)
         voxels.append(voxel)
