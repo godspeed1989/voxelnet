@@ -67,7 +67,7 @@ def ae_decoder(feature, training):
     with tf.variable_scope('vae_decoder'):
         feature = tf.layers.dense(feature, 64, activation=tf.nn.relu, name='fc1')
         feature = tf.nn.dropout(feature, keep_prob=0.5)
-        feature = tf.layers.dense(feature, 128, activation=tf.nn.relu, name='fc2')
+        feature = tf.layers.dense(feature, 128, activation=tf.nn.sigmoid, name='fc2')
         feature = tf.reshape(feature, [-1, *tuple(cfg.VOXVOX_GRID_SIZE), 1])
         return feature
 
@@ -132,7 +132,7 @@ if __name__ == '__main__':
     def gen_batch():
         np.random.seed()
         point_cloud = np.random.rand(batch_size, cfg.VOXEL_POINT_COUNT, 4)
-        point_cloud[:,:3] = point_cloud[:,:3] * 3
+        point_cloud[:,:3] = point_cloud[:,:3] * 4
         mask = np.random.choice(a=[False, True], size=(batch_size, cfg.VOXEL_POINT_COUNT, 1), p=[0.8, 0.2])
         for i in range(batch_size):
             if np.sum(mask[i]) == 0:
@@ -146,7 +146,7 @@ if __name__ == '__main__':
     print(pred.shape, gt.shape)
     sys.exit(0)
     '''
-    loss_pred = tf.reduce_sum(tf.abs(result - voxels)) * 0.01
+    loss_pred = tf.reduce_sum(tf.abs(result - voxels))
     tf.summary.scalar('loss_pred', loss_pred)
     train = tf.train.AdamOptimizer(learning_rate=0.00005).minimize(loss_pred)
 
