@@ -53,7 +53,9 @@ def ae_encoder(inputs, training, trainable=True):
         vox_feature = conv3d(vox_feature, 2, 1, 32, 'encoder_conv2', training, trainable)
         vox_feature = conv3d(vox_feature, 2, 1, 64, 'encoder_conv3', training, trainable)
         vox_feature = tf.squeeze(vox_feature, axis=[1,2])
-        vox_feature = tf.layers.flatten(vox_feature)
+        #vox_feature = tf.layers.flatten(vox_feature)
+        vox_feature = tf.reduce_max(vox_feature, axis=1, keepdims=False)
+        print(vox_feature.shape)
         vox_feature = tf.layers.dense(vox_feature, 64, activation=tf.nn.relu, name='fc', trainable=trainable)
         '''
         vox_feature = tf.reshape(inputs, [-1, np.product(tuple(cfg.VOXVOX_GRID_SIZE))])
@@ -65,9 +67,12 @@ def ae_encoder(inputs, training, trainable=True):
 
 def ae_decoder(feature, training):
     with tf.variable_scope('vae_decoder'):
-        feature = tf.layers.dense(feature, 64, activation=tf.nn.relu, name='fc1')
+        feature = tf.layers.dense(feature, 128, activation=tf.nn.relu, name='fc1')
         feature = tf.nn.dropout(feature, keep_prob=0.5)
-        feature = tf.layers.dense(feature, 128, activation=tf.nn.sigmoid, name='fc2')
+        feature = tf.layers.dense(feature, 256, activation=tf.nn.relu, name='fc2')
+        feature = tf.nn.dropout(feature, keep_prob=0.5)
+        feature = tf.layers.dense(feature, np.product(cfg.VOXVOX_GRID_SIZE),
+                                  activation=tf.nn.sigmoid, name='fc_out')
         feature = tf.reshape(feature, [-1, *tuple(cfg.VOXVOX_GRID_SIZE), 1])
         return feature
 
@@ -120,6 +125,22 @@ def voxnet_ae(inputs, mask, training):
     result = ae_decoder(codec, training)
     return result, voxels
 
+'''
+# from https://github.com/ajbrock/Generative-and-Discriminative-Voxel-Modeling/blob/master/Generative/train_VAE.py
+# Weighted binary cross-entropy for use in voxel loss. Allows weighting of false positives relative to false negatives.
+# Nominally set to strongly penalize false negatives
+def weighted_binary_crossentropy(output,target):
+    return -(98.0*target * T.log(output) + 2.0*(1.0 - target) * T.log(1.0 - output))/100.0
+
+# Voxel-Wise Reconstruction Loss
+# Note that the output values are clipped to prevent the BCE from evaluating log(0).
+voxel_loss = T.cast(T.mean(weighted_binary_crossentropy(T.clip(lasagne.nonlinearities.sigmoid( X_hat ), 1e-7, 1.0 - 1e-7), X)),'float32')
+'''
+def voxel_loss(output, target):
+    output = tf.clip_by_value(output, 1e-7, 1.0 - 1e-7)
+    weighted_binary_crossentropy = -(98.0*target * tf.log(output) + 2.0*(1.0 - target) * tf.log(1.0 - output))
+    return tf.reduce_mean(weighted_binary_crossentropy)
+
 if __name__ == '__main__':
     batch_size = 64
     point_cloud_pl = tf.placeholder(tf.float32, [None, cfg.VOXEL_POINT_COUNT, 4])
@@ -145,20 +166,7 @@ if __name__ == '__main__':
     pred, gt = sess.run([result, voxels], {point_cloud_pl: point_cloud, mask_pl: mask, training: False})
     print(pred.shape, gt.shape)
     sys.exit(0)
-    # from https://github.com/ajbrock/Generative-and-Discriminative-Voxel-Modeling/blob/master/Generative/train_VAE.py
-    # Weighted binary cross-entropy for use in voxel loss. Allows weighting of false positives relative to false negatives.
-    # Nominally set to strongly penalize false negatives
-    def weighted_binary_crossentropy(output,target):
-        return -(98.0*target * T.log(output) + 2.0*(1.0 - target) * T.log(1.0 - output))/100.0
-        
-    # Voxel-Wise Reconstruction Loss 
-    # Note that the output values are clipped to prevent the BCE from evaluating log(0).
-    voxel_loss = T.cast(T.mean(weighted_binary_crossentropy(T.clip(lasagne.nonlinearities.sigmoid( X_hat ), 1e-7, 1.0 - 1e-7), X)),'float32')
     '''
-    def voxel_loss(output, target):
-        output = tf.clip_by_value(output, 1e-7, 1.0 - 1e-7)
-        weighted_binary_crossentropy = -(98.0*target * tf.log(output) + 2.0*(1.0 - target) * tf.log(1.0 - output))
-        return tf.reduce_mean(weighted_binary_crossentropy)
 
     #loss_pred = tf.reduce_sum(tf.abs(result - voxels))
     loss_pred = voxel_loss(result, voxels)

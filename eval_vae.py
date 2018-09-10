@@ -76,7 +76,7 @@ if __name__ == '__main__':
         #print(ret)
         voxel_indice = voxel_dict['coordinate_buffer'][i*batch_size:(i+1)*batch_size]
         for j in range(batch_size):
-            choice = np.reshape(ret[j], [-1]) > 0.3
+            choice = np.reshape(ret[j], [-1]) > 0.88
             # translation
             vox_idx = voxel_indice[j][::-1] # (Z, Y, X) -> (X, Y, Z)
             points = mesh_coord[choice] + vox_idx*cfg.VOXVOX_SIZE

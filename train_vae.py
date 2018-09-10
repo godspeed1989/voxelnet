@@ -5,7 +5,7 @@ import tensorflow as tf
 
 from utils.preprocess import process_pointcloud
 from utils.colorize import colorize
-from voxae.model_ae import voxnet_ae
+from voxae.model_ae import voxnet_ae, voxel_loss
 from config import cfg
 
 batch_size = 32
@@ -23,6 +23,7 @@ def gen_batch(f_lidar):
     return batch_pc, batch_mask
 
 def batch_to_img(b):
+    b = b.astype(np.float32)
     b = np.sum(b, axis=3, keepdims=False)
     b = np.reshape(b, [batch_size, cfg.VOXVOX_GRID_SIZE[0]*cfg.VOXVOX_GRID_SIZE[1], 1])
     b = np.transpose(b, axes=[1,0,2])
@@ -34,9 +35,11 @@ def train():
     training = tf.placeholder(tf.bool)
 
     result, voxels = voxnet_ae(point_cloud_pl, mask_pl, training)
-    if True:
+    if False:
         loss_pred = tf.abs(result - voxels)
         loss_pred = tf.reduce_sum(loss_pred)
+    else:
+        loss_pred = voxel_loss(result, voxels)
 
     pred_summary = tf.summary.merge([
         tf.summary.scalar('loss_pred', loss_pred)
@@ -71,6 +74,7 @@ def train():
                 {point_cloud_pl: point_cloud, mask_pl: mask, training: True})
             train_writer.add_summary(pred_summary_val, step)
 
+            pred = pred > 0.5
             img_summary_val = sess.run(img_summary,
                 {pred_img_pl: batch_to_img(pred), vox_img_pl: batch_to_img(voxel)})
             train_writer.add_summary(img_summary_val, step)
