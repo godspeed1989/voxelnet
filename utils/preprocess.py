@@ -119,11 +119,11 @@ def process_pointcloud(tag, lidar, cls=cfg.DETECT_OBJ):
 
     np.random.shuffle(point_cloud)
 
-    shifted_coord = point_cloud[:, :3] - lidar_coord
+    point_cloud[:, :3] = point_cloud[:, :3] - lidar_coord
     # reverse the voxel coordinate (X, Y, Z) -> (Z, Y, X)
     # get voxel indice for each point
     voxel_index = np.floor(
-        shifted_coord[:, ::-1] / voxel_size).astype(np.int)
+        point_cloud[:, 2::-1] / voxel_size).astype(np.int)
 
     bound_x = np.logical_and(
         voxel_index[:, 2] >= 0, voxel_index[:, 2] < grid_size[2])
@@ -162,10 +162,11 @@ def process_pointcloud(tag, lidar, cls=cfg.DETECT_OBJ):
             feature_buffer[index, number, :4] = point
             number_buffer[index] += 1
             mask_buffer[index, number, 0] = True
-            voxel_center = (voxel*voxel_size + voxel_size*.5)[::-1] # ZYX -> XYZ
+            voxel_orig = voxel*voxel_size
+            voxel_orig = voxel_orig[::-1] # ZYX -> XYZ
             # centroid points in a voxel
             if cfg.POINT_FEATURE_LEN == 4:
-                feature_buffer[index, number, :3] = point[:3] - voxel_center
+                feature_buffer[index, number, :3] = point[:3] - voxel_orig
 
     if cfg.POINT_FEATURE_LEN == 7:
         # TODO: zero pad is substracted too

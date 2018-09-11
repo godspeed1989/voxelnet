@@ -92,9 +92,6 @@ def py_pc_to_voxel(pc_in, mask_in):
         pc = pc[np.squeeze(mask)]
         assert pc.shape[0]
         #
-        min_box_coor = np.min(pc, axis=0)
-        min_box_coor[3] = 0
-        pc = pc - min_box_coor
         voxel_index = np.floor(pc[:,:3] / cfg.VOXVOX_SIZE).astype(np.int32)
         #
         bound_x = np.logical_and(voxel_index[:, 0] >= 0, voxel_index[:, 0] < cfg.VOXVOX_GRID_SIZE[0])
@@ -138,7 +135,7 @@ voxel_loss = T.cast(T.mean(weighted_binary_crossentropy(T.clip(lasagne.nonlinear
 '''
 def voxel_loss(output, target):
     output = tf.clip_by_value(output, 1e-7, 1.0 - 1e-7)
-    weighted_binary_crossentropy = -(98.0*target * tf.log(output) + 2.0*(1.0 - target) * tf.log(1.0 - output))
+    weighted_binary_crossentropy = -(90.0*target * tf.log(output) + 10.0*(1.0 - target) * tf.log(1.0 - output))
     return tf.reduce_mean(weighted_binary_crossentropy)
 
 if __name__ == '__main__':
@@ -168,7 +165,6 @@ if __name__ == '__main__':
     sys.exit(0)
     '''
 
-    #loss_pred = tf.reduce_sum(tf.abs(result - voxels))
     loss_pred = voxel_loss(result, voxels)
     tf.summary.scalar('loss_pred', loss_pred)
     train = tf.train.AdamOptimizer(learning_rate=0.00005).minimize(loss_pred)

@@ -56,14 +56,14 @@ if __name__ == '__main__':
     print('num_voxels', num_voxels)
 
     # generate mesh grid
-    linx = np.linspace(0, cfg.VOXVOX_SIZE[0], cfg.VOXVOX_GRID_SIZE[0])
-    liny = np.linspace(0, cfg.VOXVOX_SIZE[1], cfg.VOXVOX_GRID_SIZE[1])
-    linz = np.linspace(0, cfg.VOXVOX_SIZE[2], cfg.VOXVOX_GRID_SIZE[2])
+    linx = np.linspace(0, cfg.VOXEL_X_SIZE, cfg.VOXVOX_GRID_SIZE[0])
+    liny = np.linspace(0, cfg.VOXEL_Y_SIZE, cfg.VOXVOX_GRID_SIZE[1])
+    linz = np.linspace(0, cfg.VOXEL_Z_SIZE, cfg.VOXVOX_GRID_SIZE[2])
     mesh = np.meshgrid(linx, liny, linz)
     linx = np.expand_dims(mesh[0], axis=-1) # (4, 4, 8, 1)
     liny = np.expand_dims(mesh[1], axis=-1)
     linz = np.expand_dims(mesh[2], axis=-1)
-    mesh_coord = np.reshape(np.concatenate([linx, liny, linz], axis=-1), [-1, 3])
+    mesh_coord = np.concatenate([linx, liny, linz], axis=-1)
     print('mesh_coord', mesh_coord.shape)
 
     it = num_voxels // batch_size
@@ -76,10 +76,14 @@ if __name__ == '__main__':
         #print(ret)
         voxel_indice = voxel_dict['coordinate_buffer'][i*batch_size:(i+1)*batch_size]
         for j in range(batch_size):
-            choice = np.reshape(ret[j], [-1]) > 0.88
+            choice = ret[j] > 0.5
+            indices = choice.astype(np.float32)
             # translation
             vox_idx = voxel_indice[j][::-1] # (Z, Y, X) -> (X, Y, Z)
-            points = mesh_coord[choice] + vox_idx*cfg.VOXVOX_SIZE
+            points = indices*mesh_coord + \
+                     vox_idx*[cfg.VOXEL_X_SIZE, cfg.VOXEL_Y_SIZE, cfg.VOXEL_Z_SIZE]
+            choice = np.squeeze(choice, axis=-1)
+            points = points[choice]
             results.append(points)
 
     results = np.concatenate(results)

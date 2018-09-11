@@ -49,7 +49,8 @@ def colorize(value, factor=1, vmin=None, vmax=None):
     value = np.sum(value, axis=-1)
     vmin = np.min(value) if vmin is None else vmin
     vmax = np.max(value) if vmax is None else vmax
-    value = (value - vmin) / (vmax - vmin)  # vmin..vmax
+    e = 1 if vmin == vmax else 0
+    value = (value - vmin) / (vmax - vmin + e)  # vmin..vmax
 
     value = (value * 255).astype(np.uint8)
     value = cv2.applyColorMap(value, cv2.COLORMAP_JET)

@@ -35,11 +35,7 @@ def train():
     training = tf.placeholder(tf.bool)
 
     result, voxels = voxnet_ae(point_cloud_pl, mask_pl, training)
-    if False:
-        loss_pred = tf.abs(result - voxels)
-        loss_pred = tf.reduce_sum(loss_pred)
-    else:
-        loss_pred = voxel_loss(result, voxels)
+    loss_pred = voxel_loss(result, voxels)
 
     pred_summary = tf.summary.merge([
         tf.summary.scalar('loss_pred', loss_pred)
