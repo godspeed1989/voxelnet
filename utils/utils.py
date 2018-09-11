@@ -72,7 +72,7 @@ def angle_in_limit(angle):
 def camera_to_lidar(x, y, z, T_VELO_2_CAM=None, R_RECT_0=None):
     if type(T_VELO_2_CAM) == type(None):
         T_VELO_2_CAM = np.array(cfg.MATRIX_T_VELO_2_CAM)
-    
+
     if type(R_RECT_0) == type(None):
         R_RECT_0 = np.array(cfg.MATRIX_R_RECT_0)
 
@@ -86,7 +86,7 @@ def camera_to_lidar(x, y, z, T_VELO_2_CAM=None, R_RECT_0=None):
 def lidar_to_camera(x, y, z, T_VELO_2_CAM=None, R_RECT_0=None):
     if type(T_VELO_2_CAM) == type(None):
         T_VELO_2_CAM = np.array(cfg.MATRIX_T_VELO_2_CAM)
-    
+
     if type(R_RECT_0) == type(None):
         R_RECT_0 = np.array(cfg.MATRIX_R_RECT_0)
 
@@ -104,7 +104,7 @@ def camera_to_lidar_point(points, T_VELO_2_CAM=None, R_RECT_0=None):
 
     if type(T_VELO_2_CAM) == type(None):
         T_VELO_2_CAM = np.array(cfg.MATRIX_T_VELO_2_CAM)
-    
+
     if type(R_RECT_0) == type(None):
         R_RECT_0 = np.array(cfg.MATRIX_R_RECT_0)
 
@@ -118,11 +118,11 @@ def lidar_to_camera_point(points, T_VELO_2_CAM=None, R_RECT_0=None):
     # (N, 3) -> (N, 3)
     N = points.shape[0]
     points = np.hstack([points, np.ones((N, 1))]).T
-    
-    
+
+
     if type(T_VELO_2_CAM) == type(None):
         T_VELO_2_CAM = np.array(cfg.MATRIX_T_VELO_2_CAM)
-    
+
     if type(R_RECT_0) == type(None):
         R_RECT_0 = np.array(cfg.MATRIX_R_RECT_0)
 
@@ -416,7 +416,7 @@ def draw_lidar_box3d_on_image(img, boxes3d, scores, gt_boxes3d=np.array([]),
                                                  qs[j, 1]), gt_color, thickness, cv2.LINE_AA)
 
     return cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_BGR2RGB)
-    
+
 
 
 def draw_lidar_box3d_on_birdview(birdview, boxes3d, scores, gt_boxes3d=np.array([]),
@@ -763,7 +763,7 @@ def box_transform(boxes, tx, ty, tz, r=0, coordinate='lidar'):
 
 
 def cal_iou2d(box1, box2, T_VELO_2_CAM=None, R_RECT_0=None):
-    # Input: 
+    # Input:
     #   box1/2: x, y, w, l, r
     # Output :
     #   iou
@@ -813,7 +813,7 @@ def cal_iou3d(box1, box2, T_VELO_2_CAM=None, R_RECT_0=None):
     share = np.sum((buf1 + buf2) == 2)
     area1 = np.sum(buf1)
     area2 = np.sum(buf2)
-    
+
     z1, h1, z2, h2 = box1[2], box1[3], box2[2], box2[3]
     z_intersect = cal_z_intersect(z1, h1, z2, h2)
 

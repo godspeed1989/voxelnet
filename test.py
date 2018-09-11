@@ -9,7 +9,7 @@ import tensorflow as tf
 
 from model import RPN3D
 from config import cfg
-from utils import *
+from utils.utils import box3d_to_label, load_calib
 from utils.kitti_loader import iterate_data, sample_test_data
 from termcolor import cprint
 print_green = lambda x: cprint(x, 'green', attrs=['bold'])
@@ -30,20 +30,19 @@ if __name__ == '__main__':
     dataset_dir = cfg.DATA_DIR
     val_dir = os.path.join(cfg.DATA_DIR, 'validation')
     save_model_dir = os.path.join('./save_model', args.tag)
-    
+
     # create output folder
     os.makedirs(args.output_path, exist_ok=True)
     os.makedirs(os.path.join(args.output_path, 'data'), exist_ok=True)
     if args.vis:
         os.makedirs(os.path.join(args.output_path, 'vis'), exist_ok=True)
 
-
     with tf.Graph().as_default():
 
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=cfg.GPU_MEMORY_FRACTION,
                             visible_device_list=cfg.GPU_AVAILABLE,
                             allow_growth=True)
-    
+
         config = tf.ConfigProto(
             gpu_options=gpu_options,
             device_count={
@@ -64,22 +63,24 @@ if __name__ == '__main__':
                     sess, tf.train.latest_checkpoint(save_model_dir))
             else:
                 print_green("Fail to read model parameters from {}".format(save_model_dir))
-            
-            
+
+
             for batch in iterate_data(val_dir, shuffle=False, aug=False, is_testset=False, batch_size=args.single_batch_size * cfg.GPU_USE_COUNT, multi_gpu_sum=cfg.GPU_USE_COUNT):
 
                 if args.vis:
                     tags, results, front_images, bird_views, heatmaps = model.predict_step(sess, batch, summary=False, vis=True)
                 else:
                     tags, results = model.predict_step(sess, batch, summary=False, vis=False)
-                
+
                 # ret: A, B
                 # A: (N) tag
                 # B: (N, N') (class, x, y, z, h, w, l, rz, score)
                 for tag, result in zip(tags, results):
                     of_path = os.path.join(args.output_path, 'data', tag + '.txt')
                     with open(of_path, 'w+') as f:
-                        labels = box3d_to_label([result[:, 1:8]], [result[:, 0]], [result[:, -1]], coordinate='lidar')[0]
+                        P, Tr, R = load_calib( os.path.join( cfg.CALIB_DIR, tag + '.txt' ) )
+                        labels = box3d_to_label([result[:, 1:8]], [result[:, 0]], [result[:, -1]], coordinate='lidar',
+                                                P2=P, T_VELO_2_CAM=Tr, R_RECT_0=R)[0]
                         for line in labels:
                             f.write(line)
                         print_green('write out {} objects to {}'.format(len(labels), tag))

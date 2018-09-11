@@ -12,7 +12,7 @@ from itertools import count
 from config import cfg
 from model.model import RPN3D
 from utils.kitti_loader import iterate_data, sample_test_data
-from utils.utils import box3d_to_label
+from utils.utils import box3d_to_label, load_calib
 from train_hook import check_if_should_pause
 from termcolor import cprint
 import warnings
@@ -202,7 +202,9 @@ def main(_):
                         for tag, result in zip(tags, results):
                             of_path = os.path.join(args.output_path, str(epoch), 'data', tag + '.txt')
                             with open(of_path, 'w+') as f:
-                                labels = box3d_to_label([result[:, 1:8]], [result[:, 0]], [result[:, -1]], coordinate='lidar')[0]
+                                P, Tr, R = load_calib( os.path.join( cfg.CALIB_DIR, tag + '.txt' ) )
+                                labels = box3d_to_label([result[:, 1:8]], [result[:, 0]], [result[:, -1]], coordinate='lidar',
+                                                        P2=P, T_VELO_2_CAM=Tr, R_RECT_0=R)[0]
                                 for line in labels:
                                     f.write(line)
                                 log_print('write out {} objects to {}'.format(len(labels), tag))
