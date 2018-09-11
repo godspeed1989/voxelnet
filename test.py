@@ -7,7 +7,7 @@ import os
 import time
 import tensorflow as tf
 
-from model import RPN3D
+from model.model import RPN3D
 from config import cfg
 from utils.utils import box3d_to_label, load_calib
 from utils.kitti_loader import iterate_data, sample_test_data
@@ -64,8 +64,8 @@ if __name__ == '__main__':
             else:
                 print_green("Fail to read model parameters from {}".format(save_model_dir))
 
-
-            for batch in iterate_data(val_dir, shuffle=False, aug=False, is_testset=False, batch_size=args.single_batch_size * cfg.GPU_USE_COUNT, multi_gpu_sum=cfg.GPU_USE_COUNT):
+            for batch in iterate_data(val_dir, shuffle=False, aug=False, is_testset=False, has_voxel=False,
+                                      batch_size=args.single_batch_size * cfg.GPU_USE_COUNT, multi_gpu_sum=cfg.GPU_USE_COUNT):
 
                 if args.vis:
                     tags, results, front_images, bird_views, heatmaps = model.predict_step(sess, batch, summary=False, vis=True)
