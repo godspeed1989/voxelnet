@@ -96,7 +96,7 @@ else:
     __C.FEATURE_WIDTH = int(__C.INPUT_WIDTH / __C.FEATURE_RATIO)
     __C.FEATURE_HEIGHT = int(__C.INPUT_HEIGHT / __C.FEATURE_RATIO)
 
-__C.VOXVOX_SIZE = np.array([0.05, 0.05, 0.05], dtype=np.float32)
+__C.VOXVOX_SIZE = np.array([0.05, 0.05, 0.1], dtype=np.float32)
 __C.VOXVOX_GRID_SIZE = np.array([__C.VOXEL_X_SIZE // (__C.VOXVOX_SIZE[0] - 1e-5),
                                  __C.VOXEL_Y_SIZE // (__C.VOXVOX_SIZE[1] - 1e-5),
                                  __C.VOXEL_Z_SIZE // (__C.VOXVOX_SIZE[2] - 1e-5)], dtype=np.int32)
