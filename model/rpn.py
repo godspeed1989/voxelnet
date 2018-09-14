@@ -17,13 +17,13 @@ class MiddleAndRPN:
         self.training = training
         # groundtruth(target) - each anchor box, represent as △x, △y, △z, △l, △w, △h, rotation
         self.targets = tf.placeholder(
-            tf.float32, [None, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, cfg.ANCHOR_TYPES * 7])
+            tf.float32, [None, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, cfg.ANCHOR_TYPES * cfg.ANCHOR_LEN])
         # postive anchors equal to one and others equal to zero
         self.pos_equal_one = tf.placeholder(
             tf.float32, [None, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, cfg.ANCHOR_TYPES])
         self.pos_equal_one_sum = tf.placeholder(tf.float32, [None, 1, 1, 1])
         self.pos_equal_one_for_reg = tf.placeholder(
-            tf.float32, [None, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, cfg.ANCHOR_TYPES * 7])
+            tf.float32, [None, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, cfg.ANCHOR_TYPES * cfg.ANCHOR_LEN])
         # negative anchors equal to one and others equal to zero
         self.neg_equal_one = tf.placeholder(
             tf.float32, [None, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, cfg.ANCHOR_TYPES])
@@ -111,8 +111,8 @@ class MiddleAndRPN:
             # Probability score map, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, AT]
             p_map = ConvMD(2, Cout, cfg.ANCHOR_TYPES, k=1, s=(1, 1), p=(0, 0),
                            input=temp_conv, training=self.training, activation=False, bn=False, name='conv20')
-            # Regression(residual) map, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, AT * 7]
-            r_map = ConvMD(2, Cout, cfg.ANCHOR_TYPES * 7, 1, (1, 1), (0, 0),
+            # Regression(residual) map, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, AT * AL]
+            r_map = ConvMD(2, Cout, cfg.ANCHOR_TYPES * cfg.ANCHOR_LEN, 1, (1, 1), (0, 0),
                            temp_conv, training=self.training, activation=False, bn=False, name='conv21')
             # softmax output for positive anchor and negative anchor, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, AT]
             # just for one class now, use sigmoid
@@ -146,7 +146,10 @@ class MiddleAndRPN:
 
             self.loss = self.cls_loss + self.reg_loss
 
-            self.delta_output = r_map
+            if cfg.ANCHOR_LEN == 7:
+                self.delta_output = r_map
+            else:
+                pass
             self.prob_output = self.p_pos
 
 

@@ -548,7 +548,7 @@ def box3d_to_label(batch_box3d, batch_cls, batch_score=[], coordinate='camera', 
 
 def cal_anchors():
     # Output:
-    #   anchors: (w, l, AT, 7) x y z h w l r
+    #   anchors: (w, l, AT, AL) x y z h w l r
     x = np.linspace(cfg.X_MIN, cfg.X_MAX, cfg.FEATURE_WIDTH)
     y = np.linspace(cfg.Y_MIN, cfg.Y_MAX, cfg.FEATURE_HEIGHT)
     cx, cy = np.meshgrid(x, y)
@@ -559,18 +559,32 @@ def cal_anchors():
     w = np.ones_like(cx) * cfg.ANCHOR_W
     l = np.ones_like(cx) * cfg.ANCHOR_L
     h = np.ones_like(cx) * cfg.ANCHOR_H
-    r = np.ones_like(cx)
-    if cfg.ANCHOR_TYPES == 2:
-        r[..., 0] = 0
-        r[..., 1] = 90 / 180 * np.pi
-    elif cfg.ANCHOR_TYPES == 4:
-        r[..., 0] = 0
-        r[..., 1] = 45 / 180 * np.pi
-        r[..., 2] = 90 / 180 * np.pi
-        r[..., 3] = 135 / 180 * np.pi
 
-    # 7 * (w, l, AT) -> (w, l, AT, 7)
-    anchors = np.stack([cx, cy, cz, h, w, l, r], axis=-1)
+    if cfg.COMPLEX_ORI:
+        r_r = np.ones_like(cx)
+        r_i = np.ones_like(cx)
+        if cfg.ANCHOR_TYPES == 2:
+            r_r[..., 0], r_i[..., 0] = np.cos(0), np.sin(0)
+            r_r[..., 1], r_i[..., 1] = np.cos(90 / 180 * np.pi), np.sin(90 / 180 * np.pi)
+        if cfg.ANCHOR_TYPES == 4:
+            r_r[..., 0], r_i[..., 0] = np.cos(0), np.sin(0)
+            r_r[..., 1], r_i[..., 1] = np.cos(45 / 180 * np.pi), np.sin(45 / 180 * np.pi)
+            r_r[..., 2], r_i[..., 2] = np.cos(90 / 180 * np.pi), np.sin(90 / 180 * np.pi)
+            r_r[..., 3], r_i[..., 3] = np.cos(135 / 180 * np.pi), np.sin(135 / 180 * np.pi)
+        # 8 * (w, l, AT) -> (w, l, AT, 8)
+        anchors = np.stack([cx, cy, cz, h, w, l, r_r, r_i], axis=-1)
+    else:
+        r = np.ones_like(cx)
+        if cfg.ANCHOR_TYPES == 2:
+            r[..., 0] = 0
+            r[..., 1] = 90 / 180 * np.pi
+        elif cfg.ANCHOR_TYPES == 4:
+            r[..., 0] = 0
+            r[..., 1] = 45 / 180 * np.pi
+            r[..., 2] = 90 / 180 * np.pi
+            r[..., 3] = 135 / 180 * np.pi
+        # 7 * (w, l, AT) -> (w, l, AT, 7)
+        anchors = np.stack([cx, cy, cz, h, w, l, r], axis=-1)
 
     return anchors
 
@@ -579,20 +593,25 @@ def cal_rpn_target(labels, feature_map_shape, anchors, cls='Car', coordinate='li
     # Input:
     #   labels: (N, N')
     #   feature_map_shape: (w, l)
-    #   anchors: (w, l, AT, 7)
+    #   anchors: (w, l, AT, AL)
     # Output:
     #   pos_equal_one (N, w, l, AT)
     #   neg_equal_one (N, w, l, AT)
-    #   targets (N, w, l, AT * 7)
+    #   targets (N, w, l, AT * AL)
     # attention: cal IoU on birdview
     batch_size = labels.shape[0]
     batch_gt_boxes3d = label_to_gt_box3d(labels, cls=cls, coordinate=coordinate)
     # defined in eq(1) in 2.2
-    anchors_reshaped = anchors.reshape(-1, 7)
+    anchors_reshaped = anchors.reshape(-1, cfg.ANCHOR_LEN)
     anchors_d = np.sqrt(anchors_reshaped[:, 4]**2 + anchors_reshaped[:, 5]**2)
     pos_equal_one = np.zeros((batch_size, *feature_map_shape, cfg.ANCHOR_TYPES))
     neg_equal_one = np.zeros((batch_size, *feature_map_shape, cfg.ANCHOR_TYPES))
-    targets = np.zeros((batch_size, *feature_map_shape, cfg.ANCHOR_TYPES * 7))
+    targets = np.zeros((batch_size, *feature_map_shape, cfg.ANCHOR_TYPES * cfg.ANCHOR_LEN))
+
+    if cfg.ANCHOR_LEN == 8:
+        pass
+    else:
+        anchors_for_iou = anchors_reshaped
 
     for batch_id in range(batch_size):
         if len(batch_gt_boxes3d[batch_id]) == 0: # No object
@@ -648,20 +667,23 @@ def cal_rpn_target(labels, feature_map_shape, anchors, cls='Car', coordinate='li
         pos_equal_one[batch_id, index_x, index_y, index_z] = 1
 
         # ATTENTION: index_z should be np.array
-        targets[batch_id, index_x, index_y, np.array(index_z) * 7] = (
+        targets[batch_id, index_x, index_y, np.array(index_z) * cfg.ANCHOR_LEN] = (
             batch_gt_boxes3d[batch_id][id_pos_gt, 0] - anchors_reshaped[id_pos, 0]) / anchors_d[id_pos]
-        targets[batch_id, index_x, index_y, np.array(index_z) * 7 + 1] = (
+        targets[batch_id, index_x, index_y, np.array(index_z) * cfg.ANCHOR_LEN + 1] = (
             batch_gt_boxes3d[batch_id][id_pos_gt, 1] - anchors_reshaped[id_pos, 1]) / anchors_d[id_pos]
-        targets[batch_id, index_x, index_y, np.array(index_z) * 7 + 2] = (
+        targets[batch_id, index_x, index_y, np.array(index_z) * cfg.ANCHOR_LEN + 2] = (
             batch_gt_boxes3d[batch_id][id_pos_gt, 2] - anchors_reshaped[id_pos, 2]) / cfg.ANCHOR_H
-        targets[batch_id, index_x, index_y, np.array(index_z) * 7 + 3] = np.log(
+        targets[batch_id, index_x, index_y, np.array(index_z) * cfg.ANCHOR_LEN + 3] = np.log(
             batch_gt_boxes3d[batch_id][id_pos_gt, 3] / anchors_reshaped[id_pos, 3])
-        targets[batch_id, index_x, index_y, np.array(index_z) * 7 + 4] = np.log(
+        targets[batch_id, index_x, index_y, np.array(index_z) * cfg.ANCHOR_LEN + 4] = np.log(
             batch_gt_boxes3d[batch_id][id_pos_gt, 4] / anchors_reshaped[id_pos, 4])
-        targets[batch_id, index_x, index_y, np.array(index_z) * 7 + 5] = np.log(
+        targets[batch_id, index_x, index_y, np.array(index_z) * cfg.ANCHOR_LEN + 5] = np.log(
             batch_gt_boxes3d[batch_id][id_pos_gt, 5] / anchors_reshaped[id_pos, 5])
-        targets[batch_id, index_x, index_y, np.array(index_z) * 7 + 6] = (
+        targets[batch_id, index_x, index_y, np.array(index_z) * cfg.ANCHOR_LEN + 6] = (
             batch_gt_boxes3d[batch_id][id_pos_gt, 6] - anchors_reshaped[id_pos, 6])
+        if cfg.ANCHOR_LEN == 8:
+            targets[batch_id, index_x, index_y, np.array(index_z) * cfg.ANCHOR_LEN + 7] = (
+                batch_gt_boxes3d[batch_id][id_pos_gt, 7] - anchors_reshaped[id_pos, 7])
 
         index_x, index_y, index_z = np.unravel_index(
             id_neg, (*feature_map_shape, cfg.ANCHOR_TYPES))

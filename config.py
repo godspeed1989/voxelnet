@@ -35,7 +35,7 @@ __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 __C.FEATURE_NET_TYPE = 'FeatureNet_VAE'
 
 __C.FeatureNet_AE_WPATH = './pntae'
-__C.FeatureNet_VAE_WPATH = './voxae'
+__C.FeatureNet_VAE_WPATH = None
 
 # select voxelnet / res_sequeeze / res_net / avod
 __C.RPN_TYPE = 'avod'
@@ -96,7 +96,7 @@ else:
     __C.FEATURE_WIDTH = int(__C.INPUT_WIDTH / __C.FEATURE_RATIO)
     __C.FEATURE_HEIGHT = int(__C.INPUT_HEIGHT / __C.FEATURE_RATIO)
 
-__C.VOXVOX_SIZE = np.array([0.05, 0.05, 0.1], dtype=np.float32)
+__C.VOXVOX_SIZE = np.array([0.05, 0.05, 0.5], dtype=np.float32)
 __C.VOXVOX_GRID_SIZE = np.array([__C.VOXEL_X_SIZE // (__C.VOXVOX_SIZE[0] - 1e-5),
                                  __C.VOXEL_Y_SIZE // (__C.VOXVOX_SIZE[1] - 1e-5),
                                  __C.VOXEL_Z_SIZE // (__C.VOXVOX_SIZE[2] - 1e-5)], dtype=np.int32)
@@ -175,6 +175,12 @@ if __C.DATA_SETS_TYPE == 'kitti':
     ])
 
 __C.ANCHOR_TYPES = 4
+# complex orientation representation
+__C.COMPLEX_ORI = True
+if __C.COMPLEX_ORI:
+    __C.ANCHOR_LEN = 8 # x y z h w l rr ri
+else:
+    __C.ANCHOR_LEN = 7 # x y z h w l r
 
 # Faster-RCNN/SSD Hyper params
 if __C.DETECT_OBJ == 'Car':
