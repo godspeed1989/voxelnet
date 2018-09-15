@@ -203,7 +203,7 @@ class RPN3D(object):
         # input:
         #     (N) tag
         #     (N, N') label
-        #     vox_feature (K, 35/45, 7)
+        #     vox_feature (K, 35/45, POINT_FEATURE_LEN)
         #     vox_number (K,)  number of points in each voxel grid
         #     vox_coordinate (K, 3)  coordinate buffer as described in the paper
         tag = data[0]
@@ -217,10 +217,10 @@ class RPN3D(object):
         print('train', tag)
         pos_equal_one, neg_equal_one, targets = cal_rpn_target(
             label, self.rpn_output_shape, self.anchors, cls=cfg.DETECT_OBJ, coordinate='lidar')
-        # (N, H, W, AT) -> (N, H, W, AT * 7)
+        # (N, H, W, AT) -> (N, H, W, AT * AL)
         pos_equal_one_list = []
         for i in range(cfg.ANCHOR_TYPES):
-            pos_equal_one_list.append(np.tile(pos_equal_one[..., [i]], 7))
+            pos_equal_one_list.append(np.tile(pos_equal_one[..., [i]], cfg.ANCHOR_LEN))
         pos_equal_one_for_reg = np.concatenate(pos_equal_one_list, axis=-1)
         # every batch sum
         pos_equal_one_sum = np.clip(np.sum(pos_equal_one, axis=(1, 2, 3)).reshape(-1, 1, 1, 1), a_min=1, a_max=None)
@@ -268,10 +268,10 @@ class RPN3D(object):
         print('valid', tag)
         pos_equal_one, neg_equal_one, targets = cal_rpn_target(
             label, self.rpn_output_shape, self.anchors)
-        # (N, H, W, AT) -> (N, H, W, AT*7)
+        # (N, H, W, AT) -> (N, H, W, AT * AL)
         pos_equal_one_list = []
         for i in range(cfg.ANCHOR_TYPES):
-            pos_equal_one_list.append(np.tile(pos_equal_one[..., [i]], 7))
+            pos_equal_one_list.append(np.tile(pos_equal_one[..., [i]], cfg.ANCHOR_LEN))
         pos_equal_one_for_reg = np.concatenate(pos_equal_one_list, axis=-1)
         pos_equal_one_sum = np.clip(np.sum(pos_equal_one, axis=(
             1, 2, 3)).reshape(-1, 1, 1, 1), a_min=1, a_max=None)

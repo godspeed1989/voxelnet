@@ -146,10 +146,7 @@ class MiddleAndRPN:
 
             self.loss = self.cls_loss + self.reg_loss
 
-            if cfg.ANCHOR_LEN == 7:
-                self.delta_output = r_map
-            else:
-                pass
+            self.delta_output = r_map
             self.prob_output = self.p_pos
 
 

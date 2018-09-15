@@ -608,20 +608,23 @@ def cal_rpn_target(labels, feature_map_shape, anchors, cls='Car', coordinate='li
     neg_equal_one = np.zeros((batch_size, *feature_map_shape, cfg.ANCHOR_TYPES))
     targets = np.zeros((batch_size, *feature_map_shape, cfg.ANCHOR_TYPES * cfg.ANCHOR_LEN))
 
-    if cfg.ANCHOR_LEN == 8:
-        pass
+    if cfg.COMPLEX_ORI:
+        anchors_for_iou1 = anchors_reshaped[..., :6]
+        anchors_for_iou2 = np.arctan2(anchors_reshaped[..., 7], anchors_reshaped[..., 6])
+        anchors_for_iou2 = np.expand_dims(anchors_for_iou2, axis=-1)
+        anchors_for_iou = np.concatenate([anchors_for_iou1, anchors_for_iou2], axis=-1)
     else:
         anchors_for_iou = anchors_reshaped
 
     for batch_id in range(batch_size):
         if len(batch_gt_boxes3d[batch_id]) == 0: # No object
-            N1 = len(anchors_reshaped)
+            N1 = len(anchors_for_iou)
             N2 = len(batch_gt_boxes3d[batch_id]) # 0
             iou = np.zeros((N1, N2), dtype=np.float32)
         elif cfg.IOU_TYPE == '2d_standup':
             # BOTTLENECK
             anchors_standup_2d = anchor_to_standup_box2d(
-                anchors_reshaped[:, [0, 1, 4, 5]])
+                anchors_for_iou[:, [0, 1, 4, 5]])
             # BOTTLENECK
             gt_standup_2d = corner_to_standup_box2d(center_to_corner_box2d(
                 batch_gt_boxes3d[batch_id][:, [0, 1, 4, 5, 6]], coordinate=coordinate))
@@ -632,12 +635,12 @@ def cal_rpn_target(labels, feature_map_shape, anchors, cls='Car', coordinate='li
             )
         elif cfg.IOU_TYPE == '3d_cv2':  # very slow.....
             iou = cal_box3d_iou(
-                anchors_reshaped,
+                anchors_for_iou,
                 batch_gt_boxes3d[batch_id]
             )
         elif cfg.IOU_TYPE == '3d_rbbox':
             iou = py_rbbox_overlaps_3d(
-                np.ascontiguousarray(anchors_reshaped).astype(np.float32),
+                np.ascontiguousarray(anchors_for_iou).astype(np.float32),
                 np.ascontiguousarray(batch_gt_boxes3d[batch_id]).astype(np.float32),
             )
 
@@ -699,23 +702,27 @@ def cal_rpn_target(labels, feature_map_shape, anchors, cls='Car', coordinate='li
 # BOTTLENECK
 def delta_to_boxes3d(deltas, anchors, coordinate='lidar'):
     # Input:
-    #   deltas: (N, w, l, 14)
-    #   feature_map_shape: (w, l)
-    #   anchors: (w, l, 2, 7)
+    #   deltas: (N, w, l, AT * AL)
+    #   anchors: (w, l, AT, AL)
 
     # Ouput:
-    #   boxes3d: (N, w*l*2, 7)
-    anchors_reshaped = anchors.reshape(-1, 7)
-    deltas = deltas.reshape(deltas.shape[0], -1, 7)
+    #   boxes3d: (N, w*l*AT, 7)
+    anchors_reshaped = anchors.reshape(-1, cfg.ANCHOR_LEN)
+    deltas = deltas.reshape(deltas.shape[0], -1, cfg.ANCHOR_LEN)
     anchors_d = np.sqrt(anchors_reshaped[:, 4]**2 + anchors_reshaped[:, 5]**2)
-    boxes3d = np.zeros_like(deltas)
+    boxes3d = np.zeros_like(deltas.shape[0], deltas.shape[1], 7)
     boxes3d[..., [0, 1]] = deltas[..., [0, 1]] * \
         anchors_d[:, np.newaxis] + anchors_reshaped[..., [0, 1]]
     boxes3d[..., [2]] = deltas[..., [2]] * \
         cfg.ANCHOR_H + anchors_reshaped[..., [2]]
     boxes3d[..., [3, 4, 5]] = np.exp(
         deltas[..., [3, 4, 5]]) * anchors_reshaped[..., [3, 4, 5]]
-    boxes3d[..., 6] = deltas[..., 6] + anchors_reshaped[..., 6]
+    if cfg.COMPLEX_ORI:
+        rl = deltas[..., 7] + anchors_reshaped[..., 7]
+        im = deltas[..., 6] + anchors_reshaped[..., 6]
+        boxes3d[..., 6] = np.arctan2(rl, im)
+    else:
+        boxes3d[..., 6] = deltas[..., 6] + anchors_reshaped[..., 6]
 
     return boxes3d
 
