@@ -28,6 +28,7 @@ if __C.FOV_FILTER:
     __C.AUG_DATA_FOLDER += '_fov'
 
 __C.DATA_DIR = '/mine/KITTI_DAT'
+# training splits / testing
 __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 
 # select FeatureNet / FeatureNetSIFT / FeatureNet_PntNet /

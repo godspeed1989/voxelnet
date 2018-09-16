@@ -32,7 +32,7 @@ def aug_data(tag, object_dir, aug_pc=True):
     label = np.array([line for line in open(label_path, 'r').readlines()])  # (N')
     classes = np.array([line.split()[0] for line in label])  # (N')
     # (N', 7) x, y, z, h, w, l, r
-    gt_box3d = label_to_gt_box3d(np.array(label)[np.newaxis, :], cls='', coordinate='camera')[0]
+    gt_box3d = label_to_gt_box3d([tag], np.array(label)[np.newaxis, :], cls='', coordinate='camera')[0]
     if aug_pc:
         choice = np.random.randint(0, 10)
         if choice < 5:
