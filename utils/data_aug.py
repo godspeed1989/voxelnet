@@ -18,7 +18,7 @@ from utils.utils import *
 from utils.preprocess import process_pointcloud
 
 
-def aug_data(tag, object_dir, aug_pc=True):
+def aug_data(tag, object_dir, aug_pc=True, use_newtag=False):
     np.random.seed()
     rgb = cv2.imread(os.path.join(object_dir, 'image_2', tag + '.png'))
     assert rgb is not None, print('ERROR rgb {} {}'.format(object_dir, tag))
@@ -56,4 +56,7 @@ def aug_data(tag, object_dir, aug_pc=True):
 
     label = box3d_to_label(gt_box3d[np.newaxis, ...], classes[np.newaxis, ...], coordinate='camera')[0]  # (N')
     voxel_dict = process_pointcloud(tag, lidar)
-    return newtag, rgb, lidar, voxel_dict, label
+    if use_newtag:
+        return newtag, rgb, lidar, voxel_dict, label
+    else:
+        return tag, rgb, lidar, voxel_dict, label
