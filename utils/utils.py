@@ -497,7 +497,7 @@ def label_to_gt_box3d(tags, labels, cls='Car', coordinate='camera'):
     return boxes3d
 
 
-def box3d_to_label(batch_box3d, batch_cls, batch_score=[], coordinate='camera', P2 = None, T_VELO_2_CAM=None, R_RECT_0=None):
+def box3d_to_label(batch_box3d, batch_cls, batch_score=[], coordinate='camera', P2=None, T_VELO_2_CAM=None, R_RECT_0=None):
     # Input:
     #   (N, N', 7) x y z h w l r
     #   (N, N')
@@ -720,7 +720,7 @@ def delta_to_boxes3d(deltas, anchors, coordinate='lidar'):
     anchors_reshaped = anchors.reshape(-1, cfg.ANCHOR_LEN)
     deltas = deltas.reshape(deltas.shape[0], -1, cfg.ANCHOR_LEN)
     anchors_d = np.sqrt(anchors_reshaped[:, 4]**2 + anchors_reshaped[:, 5]**2)
-    boxes3d = np.zeros_like(deltas.shape[0], deltas.shape[1], 7)
+    boxes3d = np.zeros([deltas.shape[0], deltas.shape[1], 7])
     boxes3d[..., [0, 1]] = deltas[..., [0, 1]] * \
         anchors_d[:, np.newaxis] + anchors_reshaped[..., [0, 1]]
     boxes3d[..., [2]] = deltas[..., [2]] * \
