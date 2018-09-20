@@ -117,6 +117,7 @@ def pc_to_voxel(inputs, mask):
 
 def voxnet_ae(inputs, mask, training):
     voxels = pc_to_voxel(inputs, mask)
+    voxels = tf.stop_gradient(voxels)
     #
     codec = ae_encoder(voxels, training)
     result = ae_decoder(codec, training)

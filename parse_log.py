@@ -75,6 +75,7 @@ plt.xlabel('Epoch',  fontsize=16)
 plt.xticks(  RANGE, range(9, len(RANGE)*10, 10) )
 plt.xticks(fontsize=14)
 
+plt.tick_params(labelright=True)
 plt.ylabel('AP', fontsize=16)
 plt.yticks( range(0, 100, 5) )
 plt.yticks(fontsize=14)

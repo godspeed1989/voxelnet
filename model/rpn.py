@@ -5,7 +5,7 @@ import numpy as np
 
 from config import cfg
 from model.squeeze import res_squeeze_net, res_net
-from model.avod import avod
+from model.avod import avod, avod_lite
 
 small_addon_for_BCE = 1e-8
 
@@ -102,6 +102,8 @@ class MiddleAndRPN:
                 temp_conv = res_net(temp_conv, self.training)
             elif cfg.RPN_TYPE == 'avod':
                 temp_conv = avod(temp_conv, self.training)
+            elif cfg.RPN_TYPE == 'avod_lite':
+                temp_conv = avod_lite(temp_conv, self.training)
 
             assert temp_conv.get_shape()[1] == cfg.FEATURE_HEIGHT
             assert temp_conv.get_shape()[2] == cfg.FEATURE_WIDTH
@@ -120,17 +122,13 @@ class MiddleAndRPN:
 
             # ------- classification loss --------
             if cfg.CLS_LOSS_TYPE == 'focal_loss':
-                self.cls_pos_loss = self.pos_equal_one * self.p_pos
-                self.cls_neg_loss = self.neg_equal_one * (1 - self.p_pos)
-                predictions_pt = self.cls_pos_loss + self.cls_neg_loss
                 fl_gamma = 2.0
                 fl_alpha = 0.25
-                alpha_t_pos = self.pos_equal_one * fl_alpha
-                alpha_t_neg = self.neg_equal_one * (1 - fl_alpha)
-                alpha_t = alpha_t_pos + alpha_t_neg
-                self.cls_loss = tf.reduce_sum(-alpha_t * tf.pow(1. - predictions_pt, fl_gamma) * tf.log(predictions_pt + small_addon_for_BCE))
+                self.cls_pos_loss = -self.pos_equal_one * fl_alpha * tf.pow(1. - self.p_pos, fl_gamma) * tf.log(self.p_pos + small_addon_for_BCE)
+                self.cls_neg_loss = -self.neg_equal_one * (1 - fl_alpha) * tf.pow(self.p_pos, fl_gamma) * tf.log(1 - self.p_pos + small_addon_for_BCE)
                 self.cls_pos_loss_rec = tf.reduce_sum( self.cls_pos_loss / self.pos_equal_one_sum )
                 self.cls_neg_loss_rec = tf.reduce_sum( self.cls_neg_loss / self.neg_equal_one_sum )
+                self.cls_loss = self.cls_pos_loss_rec + self.cls_neg_loss_rec
             elif cfg.CLS_LOSS_TYPE == 'voxelnet':
                 self.cls_pos_loss = (-self.pos_equal_one * tf.log(self.p_pos + small_addon_for_BCE)) / self.pos_equal_one_sum
                 self.cls_neg_loss = (-self.neg_equal_one * tf.log(1 - self.p_pos + small_addon_for_BCE)) / self.neg_equal_one_sum
