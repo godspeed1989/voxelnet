@@ -64,7 +64,7 @@ def avod_lite(inputs, training):
 def avod(inputs, training):
     # Encoder
     # 1 -> 1/2
-    conv1 = Conv2D(inputs, Cout=32, k=3, s=(1, 1),
+    conv1 = Separable_Conv2D(inputs, Cout=32, k=3, s=(1, 1), dm=3,
                    pad='same', training=training, name='conv_e11')
     conv1 = Conv2D(conv1, Cout=32, k=3, s=(1, 1),
                    pad='same', training=training, name='conv_e12')

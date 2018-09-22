@@ -33,7 +33,7 @@ __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 
 # select FeatureNet / FeatureNetSIFT / FeatureNet_PntNet /
 #        FeatureNet_PntNet1 / FeatureNet_Simple / FeatureNet_AE / FeatureNet_VAE
-__C.FEATURE_NET_TYPE = 'FeatureNet_VAE'
+__C.FEATURE_NET_TYPE = 'FeatureNet_Simple'
 
 __C.FeatureNet_AE_WPATH = './pntae'
 __C.FeatureNet_VAE_WPATH = None
@@ -59,7 +59,7 @@ __C.SUMMART_ALL_VARS = False
 
 # selected object
 __C.DETECT_OBJ = 'Car'  # Pedestrian/Cyclist
-__C.VOXEL_Z_ONE = True
+__C.VOXEL_Z_ONE = False
 if __C.DETECT_OBJ == 'Car':
     __C.Z_MIN = -3
     __C.Z_MAX = 1

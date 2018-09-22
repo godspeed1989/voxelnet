@@ -34,7 +34,7 @@ class MiddleAndRPN:
             # convolutinal middle layers
             temp_conv = self.input_data
             batch_size = self.input_data.get_shape()[0]
-            if cfg.VOXEL_Z_ONE is not True:
+            if cfg.VOXEL_Z_ONE is not True and cfg.FEATURE_NET_TYPE != 'FeatureNet_Simple':
                 temp_conv = ConvMD(3, 128, 64, 3, (2, 1, 1),
                                 (1, 1, 1), temp_conv, training=self.training, name='conv1')
                 temp_conv = ConvMD(3, 64, 64, 3, (1, 1, 1),
