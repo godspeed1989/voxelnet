@@ -6,6 +6,7 @@ import numpy as np
 from config import cfg
 from model.squeeze import res_squeeze_net, res_net
 from model.avod import avod, avod_lite
+from model.rfbnet import RFBNet
 
 small_addon_for_BCE = 1e-8
 
@@ -104,6 +105,8 @@ class MiddleAndRPN:
                 temp_conv = avod(temp_conv, self.training)
             elif cfg.RPN_TYPE == 'avod_lite':
                 temp_conv = avod_lite(temp_conv, self.training)
+            elif cfg.RPN_TYPE == 'rfbnet':
+                temp_conv = RFBNet(temp_conv, self.training)
 
             assert temp_conv.get_shape()[1] == cfg.FEATURE_HEIGHT
             assert temp_conv.get_shape()[2] == cfg.FEATURE_WIDTH
