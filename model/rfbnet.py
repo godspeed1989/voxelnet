@@ -89,10 +89,14 @@ def RFBNet(inputs, training):
         assert cfg.FEATURE_RATIO == 2
     x = conv_dw(inputs, 'conv_dw0', 32, training)
     x = conv_dw(x, 'conv_dw1', 64, training)
-    x = BasicConv(x, 'conv_bn', 64, kernel_size=3, training=training, stride=2, padding=(1,1), bn=True, relu=True)
+    use_pooling = True
+    if not use_pooling:
+        x = BasicConv(x, 'conv_bn', 64, kernel_size=3, training=training, stride=2, padding=(1,1), bn=True, relu=True)
     x = conv_dw(x, 'conv_dw2', 128, training)
     x = conv_dw(x, 'conv_dw3', 256, training)
     s = BasicRFB(x, training)
+    if use_pooling:
+        s = tf.layers.max_pooling2d(s, 2, 2)
 
     return s
 
