@@ -39,7 +39,7 @@ def aug_data(tag, object_dir, aug_pc=True, use_newtag=False):
         choice = np.random.randint(0, 10)
         if choice < 5:
             # global rotation
-            angle = np.random.uniform(-np.pi / 4, np.pi / 4)
+            angle = np.random.uniform(-np.pi / 30, np.pi / 30)
             lidar[:, 0:3] = point_transform(lidar[:, 0:3], 0, 0, 0, rz=angle)
             lidar_center_gt_box3d = camera_to_lidar_box(gt_box3d, T_VELO_2_CAM=Tr, R_RECT_0=R)
             lidar_center_gt_box3d = box_transform(lidar_center_gt_box3d, 0, 0, 0, r=angle, coordinate='lidar')
