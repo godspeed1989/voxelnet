@@ -1,4 +1,5 @@
 import tensorflow as tf
+from model.rfbnet import BasicRFB
 
 if __name__ != '__main__':
     from config import cfg
@@ -8,6 +9,8 @@ def avod_lite(inputs, training):
     # 1 -> 1/2
     conv1 = Separable_Conv2D(inputs, Cout=16, k=3, s=(1, 1), dm=3,
                    pad='same', training=training, name='conv_e11')
+    if True:
+        conv1 = BasicRFB(conv1, training)
     conv1 = Conv2D(conv1, Cout=16, k=3, s=(1, 1),
                    pad='same', training=training, name='conv_e12')
     pool1 = tf.layers.max_pooling2d(conv1, 2, strides=2, padding='valid')
