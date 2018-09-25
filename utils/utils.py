@@ -550,13 +550,15 @@ def box3d_to_label(batch_box3d, batch_cls, batch_score=[], coordinate='camera', 
 def cal_anchors():
     # Output:
     #   anchors: (w, l, AT, AL) x y z h w l r
-    x = np.linspace(cfg.X_MIN, cfg.X_MAX, cfg.FEATURE_WIDTH)
-    y = np.linspace(cfg.Y_MIN, cfg.Y_MAX, cfg.FEATURE_HEIGHT)
+    #x = np.linspace(cfg.X_MIN, cfg.X_MAX, cfg.FEATURE_WIDTH)
+    #y = np.linspace(cfg.Y_MIN, cfg.Y_MAX, cfg.FEATURE_HEIGHT)
+    x = (np.arange(cfg.FEATURE_WIDTH) + 0.5) * cfg.VOXEL_X_SIZE * cfg.FEATURE_RATIO + cfg.X_MIN
+    y = (np.arange(cfg.FEATURE_HEIGHT) + 0.5) * cfg.VOXEL_Y_SIZE * cfg.FEATURE_RATIO + cfg.Y_MIN
     cx, cy = np.meshgrid(x, y)
     # all is (w, l, AT)
     cx = np.tile(cx[..., np.newaxis], cfg.ANCHOR_TYPES)
     cy = np.tile(cy[..., np.newaxis], cfg.ANCHOR_TYPES)
-    cz = np.ones_like(cx) * cfg.ANCHOR_Z
+    #cz = np.ones_like(cx) * cfg.ANCHOR_Z
     w = np.ones_like(cx) * cfg.ANCHOR_W
     l = np.ones_like(cx) * cfg.ANCHOR_L
     h = np.ones_like(cx) * cfg.ANCHOR_H
@@ -564,26 +566,40 @@ def cal_anchors():
     if cfg.COMPLEX_ORI:
         r_r = np.ones_like(cx)
         r_i = np.ones_like(cx)
-        if cfg.ANCHOR_TYPES == 2:
-            r_r[..., 0], r_i[..., 0] = np.cos(0), np.sin(0)
-            r_r[..., 1], r_i[..., 1] = np.cos(90 / 180 * np.pi), np.sin(90 / 180 * np.pi)
+        cz = np.ones_like(cx)
         if cfg.ANCHOR_TYPES == 4:
-            r_r[..., 0], r_i[..., 0] = np.cos(0), np.sin(0)
-            r_r[..., 1], r_i[..., 1] = np.cos(45 / 180 * np.pi), np.sin(45 / 180 * np.pi)
-            r_r[..., 2], r_i[..., 2] = np.cos(90 / 180 * np.pi), np.sin(90 / 180 * np.pi)
-            r_r[..., 3], r_i[..., 3] = np.cos(135 / 180 * np.pi), np.sin(135 / 180 * np.pi)
+            cz[..., 0], r_r[..., 0], r_i[..., 0] = 0.9*cfg.ANCHOR_Z, np.cos(45 / 180 * np.pi), np.sin(45 / 180 * np.pi)
+            cz[..., 1], r_r[..., 1], r_i[..., 1] = 0.9*cfg.ANCHOR_Z, np.cos(135 / 180 * np.pi), np.sin(135 / 180 * np.pi)
+            cz[..., 2], r_r[..., 2], r_i[..., 2] = 1.1*cfg.ANCHOR_Z, np.cos(45 / 180 * np.pi), np.sin(45 / 180 * np.pi)
+            cz[..., 3], r_r[..., 3], r_i[..., 3] = 1.1*cfg.ANCHOR_Z, np.cos(135 / 180 * np.pi), np.sin(135 / 180 * np.pi)
+        if cfg.ANCHOR_TYPES == 8:
+            cz[..., 0], r_r[..., 0], r_i[..., 0] = 0.9*cfg.ANCHOR_Z, np.cos(0), np.sin(0)
+            cz[..., 1], r_r[..., 1], r_i[..., 1] = 0.9*cfg.ANCHOR_Z, np.cos(45 / 180 * np.pi), np.sin(45 / 180 * np.pi)
+            cz[..., 2], r_r[..., 2], r_i[..., 2] = 0.9*cfg.ANCHOR_Z, np.cos(90 / 180 * np.pi), np.sin(90 / 180 * np.pi)
+            cz[..., 3], r_r[..., 3], r_i[..., 3] = 0.9*cfg.ANCHOR_Z, np.cos(135 / 180 * np.pi), np.sin(135 / 180 * np.pi)
+            cz[..., 4], r_r[..., 4], r_i[..., 4] = 1.1*cfg.ANCHOR_Z, np.cos(0), np.sin(0)
+            cz[..., 5], r_r[..., 5], r_i[..., 5] = 1.1*cfg.ANCHOR_Z, np.cos(45 / 180 * np.pi), np.sin(45 / 180 * np.pi)
+            cz[..., 6], r_r[..., 6], r_i[..., 6] = 1.1*cfg.ANCHOR_Z, np.cos(90 / 180 * np.pi), np.sin(90 / 180 * np.pi)
+            cz[..., 7], r_r[..., 7], r_i[..., 7] = 1.1*cfg.ANCHOR_Z, np.cos(135 / 180 * np.pi), np.sin(135 / 180 * np.pi)
         # 8 * (w, l, AT) -> (w, l, AT, 8)
         anchors = np.stack([cx, cy, cz, h, w, l, r_r, r_i], axis=-1)
     else:
         r = np.ones_like(cx)
-        if cfg.ANCHOR_TYPES == 2:
-            r[..., 0] = 0
-            r[..., 1] = 90 / 180 * np.pi
-        elif cfg.ANCHOR_TYPES == 4:
-            r[..., 0] = 0
-            r[..., 1] = 45 / 180 * np.pi
-            r[..., 2] = 90 / 180 * np.pi
-            r[..., 3] = 135 / 180 * np.pi
+        cz = np.ones_like(cx)
+        if cfg.ANCHOR_TYPES == 4:
+            cz[..., 0], r[..., 0] = 0.9*cfg.ANCHOR_Z, 45 / 180 * np.pi
+            cz[..., 1], r[..., 1] = 0.9*cfg.ANCHOR_Z, 135 / 180 * np.pi
+            cz[..., 2], r[..., 2] = 1.1*cfg.ANCHOR_Z, 45 / 180 * np.pi
+            cz[..., 3], r[..., 3] = 1.1*cfg.ANCHOR_Z, 135 / 180 * np.pi
+        elif cfg.ANCHOR_TYPES == 8:
+            cz[..., 0], r[..., 0] = 0.9*cfg.ANCHOR_Z, 0 / 180 * np.pi
+            cz[..., 1], r[..., 1] = 0.9*cfg.ANCHOR_Z, 45 / 180 * np.pi
+            cz[..., 2], r[..., 2] = 0.9*cfg.ANCHOR_Z, 90 / 180 * np.pi
+            cz[..., 3], r[..., 3] = 0.9*cfg.ANCHOR_Z, 135 / 180 * np.pi
+            cz[..., 4], r[..., 4] = 1.1*cfg.ANCHOR_Z, 0 / 180 * np.pi
+            cz[..., 5], r[..., 5] = 1.1*cfg.ANCHOR_Z, 45 / 180 * np.pi
+            cz[..., 6], r[..., 6] = 1.1*cfg.ANCHOR_Z, 90 / 180 * np.pi
+            cz[..., 7], r[..., 7] = 1.1*cfg.ANCHOR_Z, 135 / 180 * np.pi
         # 7 * (w, l, AT) -> (w, l, AT, 7)
         anchors = np.stack([cx, cy, cz, h, w, l, r], axis=-1)
 

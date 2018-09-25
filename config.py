@@ -75,7 +75,7 @@ if __C.DETECT_OBJ == 'Car':
         __C.VOXEL_Z_SIZE = __C.Z_MAX - __C.Z_MIN # 4
         __C.GRID_Z_SIZE = 1
     else:
-        __C.VOXEL_Z_SIZE = 0.4
+        __C.VOXEL_Z_SIZE = 0.2
         __C.GRID_Z_SIZE = int((__C.Z_MAX - __C.Z_MIN) / __C.VOXEL_Z_SIZE)
     __C.VOXEL_POINT_COUNT = 64
     __C.INPUT_WIDTH = __C.GRID_X_SIZE
@@ -175,7 +175,11 @@ if __C.DATA_SETS_TYPE == 'kitti':
         [0, 0, 0, 1]
     ])
 
-__C.ANCHOR_TYPES = 4
+# 2 / 4
+__C.ANCHOR_XY_TYPES = 2
+# 1 / 2
+__C.ANCHOR_Z_TYPES = 2
+__C.ANCHOR_TYPES = __C.ANCHOR_XY_TYPES * __C.ANCHOR_Z_TYPES
 # complex orientation representation
 __C.COMPLEX_ORI = True
 if __C.COMPLEX_ORI:

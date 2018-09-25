@@ -7,11 +7,11 @@ if __name__ != '__main__':
 def avod_lite(inputs, training):
     # Encoder
     # 1 -> 1/2
-    conv1 = Separable_Conv2D(inputs, Cout=16, k=3, s=(1, 1), dm=3,
+    conv1 = Separable_Conv2D(inputs, Cout=32, k=3, s=(1, 1), dm=3,
                    pad='same', training=training, name='conv_e11')
-    if True:
+    if False:
         conv1 = BasicRFB(conv1, training)
-    conv1 = Conv2D(conv1, Cout=16, k=3, s=(1, 1),
+    conv1 = Conv2D(conv1, Cout=32, k=3, s=(1, 1),
                    pad='same', training=training, name='conv_e12')
     pool1 = tf.layers.max_pooling2d(conv1, 2, strides=2, padding='valid')
     # 1/4
@@ -41,7 +41,7 @@ def avod_lite(inputs, training):
     upconv3 = Deconv2D(conv4, Cout=128, k=3, s=(2, 2),
                        pad='same', training=training, name='upconv3')
     concat3 = tf.concat((conv3, upconv3), axis=3, name='concat3')
-    pyramid_fusion3 = Conv2D(concat3, Cout=64, k=3, s=(1, 1),
+    pyramid_fusion3 = Conv2D(concat3, Cout=128, k=3, s=(1, 1),
                              pad='same', training=training, name='pyramid_fusion3')
     if cfg.FEATURE_RATIO == 4:
         return pyramid_fusion3
@@ -50,7 +50,7 @@ def avod_lite(inputs, training):
     upconv2 = Deconv2D(pyramid_fusion3, Cout=64, k=3, s=(2, 2),
                        pad='same', training=training, name='upconv2')
     concat2 = tf.concat((conv2, upconv2), axis=3, name='concat2')
-    pyramid_fusion2 = Conv2D(concat2, Cout=32, k=3, s=(1, 1),
+    pyramid_fusion2 = Conv2D(concat2, Cout=64, k=3, s=(1, 1),
                              pad='same', training=training, name='pyramid_fusion2')
     if cfg.FEATURE_RATIO == 2:
         return pyramid_fusion2
