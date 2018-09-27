@@ -37,14 +37,24 @@ def aug_data(tag, object_dir, aug_pc=True, use_newtag=False):
     P, Tr, R = load_calib( os.path.join( cfg.CALIB_DIR, tag + '.txt' ) )
     if aug_pc:
         choice = np.random.randint(0, 10)
-        if choice < 5:
+        if choice < 4:
             # global rotation
             angle = np.random.uniform(-np.pi / 30, np.pi / 30)
             lidar[:, 0:3] = point_transform(lidar[:, 0:3], 0, 0, 0, rz=angle)
             lidar_center_gt_box3d = camera_to_lidar_box(gt_box3d, T_VELO_2_CAM=Tr, R_RECT_0=R)
             lidar_center_gt_box3d = box_transform(lidar_center_gt_box3d, 0, 0, 0, r=angle, coordinate='lidar')
             gt_box3d = lidar_to_camera_box(lidar_center_gt_box3d, T_VELO_2_CAM=Tr, R_RECT_0=R)
-            newtag = 'aug_{}_2_{:.4f}'.format(tag, angle).replace('.', '_')
+            newtag = 'aug_{}_1_{:.4f}'.format(tag, angle).replace('.', '_')
+        elif choice < 7:
+            # global translation
+            tx = np.random.uniform(-0.1, -0.1)
+            ty = np.random.uniform(-0.1, -0.1)
+            tz = np.random.uniform(-0.15, -0.15)
+            lidar[:, 0:3] = point_transform(lidar[:, 0:3], tx, ty, tz)
+            lidar_center_gt_box3d = camera_to_lidar_box(gt_box3d, T_VELO_2_CAM=Tr, R_RECT_0=R)
+            lidar_center_gt_box3d = box_transform(lidar_center_gt_box3d, tx, ty, tz, coordinate='lidar')
+            gt_box3d = lidar_to_camera_box(lidar_center_gt_box3d, T_VELO_2_CAM=Tr, R_RECT_0=R)
+            newtag = 'aug_{}_2_trans'.format(tag).replace('.', '_')
         else:
             # global scaling
             factor = np.random.uniform(0.95, 1.05)

@@ -59,7 +59,7 @@ __C.SUMMART_ALL_VARS = False
 
 # selected object
 __C.DETECT_OBJ = 'Car'  # Pedestrian/Cyclist
-__C.VOXEL_Z_ONE = False
+__C.VOXEL_Z_ONE = True
 if __C.DETECT_OBJ == 'Car':
     __C.Z_MIN = -3
     __C.Z_MAX = 1
@@ -176,7 +176,7 @@ if __C.DATA_SETS_TYPE == 'kitti':
     ])
 
 # 2 / 4
-__C.ANCHOR_XY_TYPES = 2
+__C.ANCHOR_XY_TYPES = 4
 # 1 / 2
 __C.ANCHOR_Z_TYPES = 2
 __C.ANCHOR_TYPES = __C.ANCHOR_XY_TYPES * __C.ANCHOR_Z_TYPES
