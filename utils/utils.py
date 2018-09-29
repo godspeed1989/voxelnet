@@ -567,12 +567,12 @@ def cal_anchors():
         r_r = np.ones_like(cx)
         r_i = np.ones_like(cx)
         cz = np.ones_like(cx)
-        if cfg.ANCHOR_TYPES == 4:
+        if cfg.ANCHOR_XY_TYPES == 2 and cfg.ANCHOR_Z_TYPES == 2:
             cz[..., 0], r_r[..., 0], r_i[..., 0] = 0.9*cfg.ANCHOR_Z, np.cos(45 / 180 * np.pi), np.sin(45 / 180 * np.pi)
             cz[..., 1], r_r[..., 1], r_i[..., 1] = 0.9*cfg.ANCHOR_Z, np.cos(135 / 180 * np.pi), np.sin(135 / 180 * np.pi)
             cz[..., 2], r_r[..., 2], r_i[..., 2] = 1.1*cfg.ANCHOR_Z, np.cos(45 / 180 * np.pi), np.sin(45 / 180 * np.pi)
             cz[..., 3], r_r[..., 3], r_i[..., 3] = 1.1*cfg.ANCHOR_Z, np.cos(135 / 180 * np.pi), np.sin(135 / 180 * np.pi)
-        if cfg.ANCHOR_TYPES == 8:
+        elif cfg.ANCHOR_XY_TYPES == 4 and cfg.ANCHOR_Z_TYPES == 2:
             cz[..., 0], r_r[..., 0], r_i[..., 0] = 0.9*cfg.ANCHOR_Z, np.cos(0), np.sin(0)
             cz[..., 1], r_r[..., 1], r_i[..., 1] = 0.9*cfg.ANCHOR_Z, np.cos(45 / 180 * np.pi), np.sin(45 / 180 * np.pi)
             cz[..., 2], r_r[..., 2], r_i[..., 2] = 0.9*cfg.ANCHOR_Z, np.cos(90 / 180 * np.pi), np.sin(90 / 180 * np.pi)
@@ -586,12 +586,12 @@ def cal_anchors():
     else:
         r = np.ones_like(cx)
         cz = np.ones_like(cx)
-        if cfg.ANCHOR_TYPES == 4:
+        if cfg.ANCHOR_XY_TYPES == 2 and cfg.ANCHOR_Z_TYPES == 2:
             cz[..., 0], r[..., 0] = 0.9*cfg.ANCHOR_Z, 45 / 180 * np.pi
             cz[..., 1], r[..., 1] = 0.9*cfg.ANCHOR_Z, 135 / 180 * np.pi
             cz[..., 2], r[..., 2] = 1.1*cfg.ANCHOR_Z, 45 / 180 * np.pi
             cz[..., 3], r[..., 3] = 1.1*cfg.ANCHOR_Z, 135 / 180 * np.pi
-        elif cfg.ANCHOR_TYPES == 8:
+        elif cfg.ANCHOR_XY_TYPES == 4 and cfg.ANCHOR_Z_TYPES == 2:
             cz[..., 0], r[..., 0] = 0.9*cfg.ANCHOR_Z, 0 / 180 * np.pi
             cz[..., 1], r[..., 1] = 0.9*cfg.ANCHOR_Z, 45 / 180 * np.pi
             cz[..., 2], r[..., 2] = 0.9*cfg.ANCHOR_Z, 90 / 180 * np.pi
