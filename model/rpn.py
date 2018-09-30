@@ -4,9 +4,6 @@ import tensorflow as tf
 import numpy as np
 
 from config import cfg
-from model.squeeze import res_squeeze_net, res_net
-from model.avod import avod, avod_lite
-from model.rfbnet import RFBNet
 
 small_addon_for_BCE = 1e-8
 
@@ -98,14 +95,19 @@ class MiddleAndRPN:
                 # final: 768 = 256*3
                 temp_conv = tf.concat([deconv3, deconv2, deconv1], -1)
             elif cfg.RPN_TYPE == 'res_sequeeze':
+                from model.squeeze import res_squeeze_net
                 temp_conv = res_squeeze_net(temp_conv, self.training)
             elif cfg.RPN_TYPE == 'res_net':
+                from model.squeeze import res_net
                 temp_conv = res_net(temp_conv, self.training)
             elif cfg.RPN_TYPE == 'avod':
+                from model.avod import avod
                 temp_conv = avod(temp_conv, self.training)
             elif cfg.RPN_TYPE == 'avod_lite':
+                from model.avod import avod_lite
                 temp_conv = avod_lite(temp_conv, self.training)
             elif cfg.RPN_TYPE == 'rfbnet':
+                from model.rfbnet import RFBNet
                 temp_conv = RFBNet(temp_conv, self.training)
 
             assert temp_conv.get_shape()[1] == cfg.FEATURE_HEIGHT
