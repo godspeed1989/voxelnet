@@ -33,7 +33,7 @@ __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 
 # select FeatureNet / FeatureNetSIFT / FeatureNet_PntNet /
 #        FeatureNet_PntNet1 / FeatureNet_Simple / FeatureNet_AE / FeatureNet_VAE
-__C.FEATURE_NET_TYPE = 'FeatureNet_PntNet1'
+__C.FEATURE_NET_TYPE = 'FeatureNet'
 
 __C.FeatureNet_AE_WPATH = None
 __C.FeatureNet_VAE_WPATH = None

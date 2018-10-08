@@ -1,5 +1,5 @@
 # crooped gt dir
-GT_DIR=/mine/KITTI_DAT/validation/label_2
+GT_DIR=/mine/KITTI_DAT/trainval/label_2
 # pred dir
 PRED_DIR=$1
 

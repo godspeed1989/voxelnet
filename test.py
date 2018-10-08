@@ -5,6 +5,7 @@ import glob
 import argparse
 import os
 import time
+import cv2
 import tensorflow as tf
 
 from model.model import RPN3D
@@ -20,7 +21,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--tag', type=str, nargs='?', default='default',
                         help='set log tag')
     parser.add_argument('--output-path', type=str, nargs='?',
-                        default='./predictions', help='results output dir')
+                        default='./predictions_test', help='results output dir')
     parser.add_argument('-b', '--single-batch-size', type=int, nargs='?', default=2,
                         help='set batch size for each gpu')
     parser.add_argument('-v', '--vis', type=bool, nargs='?', default=False,
@@ -28,7 +29,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     dataset_dir = cfg.DATA_DIR
-    val_dir = os.path.join(cfg.DATA_DIR, 'validation')
+    val_dir = os.path.join(cfg.DATA_DIR, 'testing')
     save_model_dir = os.path.join('./save_model', args.tag)
 
     # create output folder
@@ -64,13 +65,13 @@ if __name__ == '__main__':
             else:
                 print_green("Fail to read model parameters from {}".format(save_model_dir))
 
-            for batch in iterate_data(val_dir, shuffle=False, aug=False, is_testset=False, has_voxel=False,
+            for batch in iterate_data(val_dir, shuffle=False, aug=False, is_testset=True, has_voxel=False,
                                       batch_size=args.single_batch_size * cfg.GPU_USE_COUNT, multi_gpu_sum=cfg.GPU_USE_COUNT):
 
                 if args.vis:
-                    tags, results, front_images, bird_views, heatmaps = model.predict_step(sess, batch, summary=False, vis=True)
+                    tags, results, front_images, bird_views, heatmaps = model.predict_step(sess, batch, summary=False, vis=True, is_testset=True)
                 else:
-                    tags, results = model.predict_step(sess, batch, summary=False, vis=False)
+                    tags, results = model.predict_step(sess, batch, summary=False, vis=False, is_testset=True)
 
                 # ret: A, B
                 # A: (N) tag

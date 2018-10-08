@@ -298,7 +298,7 @@ class RPN3D(object):
             output_feed.append(self.validate_summary)
         return session.run(output_feed, input_feed)
 
-    def predict_step(self, session, data, summary=False, vis=False):
+    def predict_step(self, session, data, summary=False, vis=False, is_testset=False):
         # input:
         #     (N) tag
         #     (N, N') label(can be empty)
@@ -321,9 +321,6 @@ class RPN3D(object):
         img = data[7]
         lidar = data[8]
 
-        if summary or vis:
-            batch_gt_boxes3d = label_to_gt_box3d(
-                tag, label, cls=self.cls, coordinate='lidar')
         print('predict', tag)
         input_feed = {}
         input_feed[self.is_train] = False
@@ -381,6 +378,11 @@ class RPN3D(object):
         for boxes3d, scores in zip(ret_box3d, ret_score):
             ret_box3d_score.append(np.concatenate([np.tile(self.cls, len(boxes3d))[:, np.newaxis],
                                                    boxes3d, scores[:, np.newaxis]], axis=-1))
+        if not is_testset:
+            batch_gt_boxes3d = label_to_gt_box3d(
+                tag, label, cls=self.cls, coordinate='lidar')
+        else:
+            batch_gt_boxes3d = ret_box3d
 
         if summary:
             # only summry 1 in a batch
