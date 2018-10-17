@@ -33,7 +33,7 @@ __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 
 # select FeatureNet / FeatureNetSIFT / FeatureNet_PntNet /
 #        FeatureNet_PntNet1 / FeatureNet_Simple / FeatureNet_AE / FeatureNet_VAE
-__C.FEATURE_NET_TYPE = 'FeatureNet'
+__C.FEATURE_NET_TYPE = 'FeatureNet_PntNet1'
 
 __C.FeatureNet_AE_WPATH = None
 __C.FeatureNet_VAE_WPATH = None
@@ -218,7 +218,8 @@ if __C.DETECT_OBJ == 'Cyclist':
 # for rpn nms
 __C.RPN_NMS_POST_TOPK = 20
 __C.RPN_NMS_THRESH = 0.1
-__C.RPN_SCORE_THRESH = 0.96
+__C.RPN_SCORE_THRESH = 0.75
+__C.RPN_NMS_MAX = 200
 
 # cal IoU method: 2d_standup / 3d_cv2 / 3d_rbbox
 __C.IOU_TYPE = '3d_rbbox'

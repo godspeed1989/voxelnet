@@ -349,6 +349,9 @@ class RPN3D(object):
                 ret_box3d.append(np.zeros((0,7), dtype=batch_boxes3d.dtype))
                 ret_score.append(np.zeros((0,), dtype=batch_probs.dtype))
                 continue
+            if ind.shape[0] > cfg.RPN_NMS_MAX:
+                scores_order = batch_probs[batch_id, ind].argsort()[::-1] # order in descending (n, )
+                ind = ind[scores_order[:cfg.RPN_NMS_MAX]]
             tmp_boxes3d = batch_boxes3d[batch_id, ind, ...] # (n, 7)
             tmp_scores = batch_probs[batch_id, ind] # (n, )
 

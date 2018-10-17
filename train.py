@@ -55,8 +55,8 @@ if cfg.USE_AUGED_DATA:
 else:
     AUG_DATA = True
     HAS_VOXEL = False
-    train_dir = os.path.join(cfg.DATA_DIR, 'training')
-    val_dir = os.path.join(cfg.DATA_DIR, 'validation')
+    train_dir = os.path.join(cfg.DATA_DIR, 'training50')
+    val_dir = os.path.join(cfg.DATA_DIR, 'validation50')
 log_dir = os.path.join('./log', args.tag)
 save_model_dir = os.path.join('./save_model', args.tag)
 os.makedirs(log_dir, exist_ok=True)

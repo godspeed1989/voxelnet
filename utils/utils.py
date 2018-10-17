@@ -574,13 +574,13 @@ def cal_anchors():
             cz[..., 3], r_r[..., 3], r_i[..., 3] = 1.1*cfg.ANCHOR_Z, np.cos(135 / 180 * np.pi), np.sin(135 / 180 * np.pi)
         elif cfg.ANCHOR_XY_TYPES == 4 and cfg.ANCHOR_Z_TYPES == 2:
             cz[..., 0], r_r[..., 0], r_i[..., 0] = 0.9*cfg.ANCHOR_Z, np.cos(0), np.sin(0)
-            cz[..., 1], r_r[..., 1], r_i[..., 1] = 0.9*cfg.ANCHOR_Z, np.cos(45 / 180 * np.pi), np.sin(45 / 180 * np.pi)
-            cz[..., 2], r_r[..., 2], r_i[..., 2] = 0.9*cfg.ANCHOR_Z, np.cos(90 / 180 * np.pi), np.sin(90 / 180 * np.pi)
-            cz[..., 3], r_r[..., 3], r_i[..., 3] = 0.9*cfg.ANCHOR_Z, np.cos(135 / 180 * np.pi), np.sin(135 / 180 * np.pi)
+            cz[..., 1], r_r[..., 1], r_i[..., 1] = 0.9*cfg.ANCHOR_Z, np.cos(90 / 180 * np.pi), np.sin(90 / 180 * np.pi)
+            cz[..., 2], r_r[..., 2], r_i[..., 2] = 0.9*cfg.ANCHOR_Z, np.cos(180 / 180 * np.pi), np.sin(180 / 180 * np.pi)
+            cz[..., 3], r_r[..., 3], r_i[..., 3] = 0.9*cfg.ANCHOR_Z, np.cos(270 / 180 * np.pi), np.sin(270 / 180 * np.pi)
             cz[..., 4], r_r[..., 4], r_i[..., 4] = 1.1*cfg.ANCHOR_Z, np.cos(0), np.sin(0)
-            cz[..., 5], r_r[..., 5], r_i[..., 5] = 1.1*cfg.ANCHOR_Z, np.cos(45 / 180 * np.pi), np.sin(45 / 180 * np.pi)
-            cz[..., 6], r_r[..., 6], r_i[..., 6] = 1.1*cfg.ANCHOR_Z, np.cos(90 / 180 * np.pi), np.sin(90 / 180 * np.pi)
-            cz[..., 7], r_r[..., 7], r_i[..., 7] = 1.1*cfg.ANCHOR_Z, np.cos(135 / 180 * np.pi), np.sin(135 / 180 * np.pi)
+            cz[..., 5], r_r[..., 5], r_i[..., 5] = 1.1*cfg.ANCHOR_Z, np.cos(90 / 180 * np.pi), np.sin(90 / 180 * np.pi)
+            cz[..., 6], r_r[..., 6], r_i[..., 6] = 1.1*cfg.ANCHOR_Z, np.cos(180 / 180 * np.pi), np.sin(180 / 180 * np.pi)
+            cz[..., 7], r_r[..., 7], r_i[..., 7] = 1.1*cfg.ANCHOR_Z, np.cos(270 / 180 * np.pi), np.sin(270 / 180 * np.pi)
         # 8 * (w, l, AT) -> (w, l, AT, 8)
         anchors = np.stack([cx, cy, cz, h, w, l, r_r, r_i], axis=-1)
     else:
@@ -593,13 +593,13 @@ def cal_anchors():
             cz[..., 3], r[..., 3] = 1.1*cfg.ANCHOR_Z, 135 / 180 * np.pi
         elif cfg.ANCHOR_XY_TYPES == 4 and cfg.ANCHOR_Z_TYPES == 2:
             cz[..., 0], r[..., 0] = 0.9*cfg.ANCHOR_Z, 0 / 180 * np.pi
-            cz[..., 1], r[..., 1] = 0.9*cfg.ANCHOR_Z, 45 / 180 * np.pi
-            cz[..., 2], r[..., 2] = 0.9*cfg.ANCHOR_Z, 90 / 180 * np.pi
-            cz[..., 3], r[..., 3] = 0.9*cfg.ANCHOR_Z, 135 / 180 * np.pi
+            cz[..., 1], r[..., 1] = 0.9*cfg.ANCHOR_Z, 90 / 180 * np.pi
+            cz[..., 2], r[..., 2] = 0.9*cfg.ANCHOR_Z, 180 / 180 * np.pi
+            cz[..., 3], r[..., 3] = 0.9*cfg.ANCHOR_Z, 270 / 180 * np.pi
             cz[..., 4], r[..., 4] = 1.1*cfg.ANCHOR_Z, 0 / 180 * np.pi
-            cz[..., 5], r[..., 5] = 1.1*cfg.ANCHOR_Z, 45 / 180 * np.pi
-            cz[..., 6], r[..., 6] = 1.1*cfg.ANCHOR_Z, 90 / 180 * np.pi
-            cz[..., 7], r[..., 7] = 1.1*cfg.ANCHOR_Z, 135 / 180 * np.pi
+            cz[..., 5], r[..., 5] = 1.1*cfg.ANCHOR_Z, 90 / 180 * np.pi
+            cz[..., 6], r[..., 6] = 1.1*cfg.ANCHOR_Z, 180 / 180 * np.pi
+            cz[..., 7], r[..., 7] = 1.1*cfg.ANCHOR_Z, 270 / 180 * np.pi
         # 7 * (w, l, AT) -> (w, l, AT, 7)
         anchors = np.stack([cx, cy, cz, h, w, l, r], axis=-1)
 
@@ -662,20 +662,33 @@ def cal_rpn_target(tags, labels, feature_map_shape, anchors, cls='Car', coordina
                 np.ascontiguousarray(batch_gt_boxes3d[batch_id]).astype(np.float32),
             )
 
-        # find anchor with highest iou(iou should also > 0)
+        # [1] find anchor with highest iou(iou should also > 0)
         id_highest = np.argmax(iou.T, axis=1)
         id_highest_gt = np.arange(iou.T.shape[0])
         mask = iou.T[id_highest_gt, id_highest] > 0
         id_highest, id_highest_gt = id_highest[mask], id_highest_gt[mask]
 
-        # find anchor iou > cfg.XXX_POS_IOU
+        # [2] find anchor iou > cfg.XXX_POS_IOU
         id_pos, id_pos_gt = np.where(iou > cfg.RPN_POS_IOU)
 
         # find anchor iou < cfg.XXX_NEG_IOU   格子里的每个anchor均为负
         id_neg = np.where(np.sum(iou < cfg.RPN_NEG_IOU, axis=1) == iou.shape[1])[0]
 
+        # [1] + [2]
         id_pos = np.concatenate([id_pos, id_highest])
         id_pos_gt = np.concatenate([id_pos_gt, id_highest_gt])
+
+        # filter anchors by orientation
+        '''
+        if cfg.COMPLEX_ORI:
+            anchors_angle = np.arctan2(anchors_reshaped[id_pos, 7], anchors_reshaped[id_pos, 6])
+        else:
+            anchors_angle = anchors_reshaped[id_pos, 6]
+        gt_boxes_angle = batch_gt_boxes3d[batch_id][id_pos_gt, 6]
+        sel_by_angle = np.where(np.abs(anchors_angle - gt_boxes_angle) < np.pi/2)[0]
+        #print('select by angle', sel_by_angle.shape[0], 'from', id_pos.shape[0])
+        id_pos, id_pos_gt = id_pos[sel_by_angle], id_pos_gt[sel_by_angle]
+        '''
 
         # TODO: uniquify the array in a more scientific way
         id_pos, index = np.unique(id_pos, return_index=True)
