@@ -24,6 +24,7 @@ class VFELayer(object):
         # [K, T, F] tensordot [F, units] -> [K, T, units]
         pointwise = self.batch_norm.apply(self.dense.apply(inputs), training)
 
+        pointwise = tf.nn.relu(pointwise)
         # [K, 1, units]
         aggregated = tf.reduce_max(pointwise, axis=1, keepdims=True)
 

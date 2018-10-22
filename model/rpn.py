@@ -175,12 +175,12 @@ def ConvMD(M, Cin, Cout, k, s, p, input, training, activation=True, bn=True, nam
             paddings = (np.array(temp_p)).repeat(2).reshape(4, 2)
             pad = tf.pad(input, paddings, "CONSTANT")
             temp_conv = tf.layers.conv2d(
-                pad, Cout, k, strides=s, padding="valid", reuse=tf.AUTO_REUSE, name=scope)
+                pad, Cout, k, strides=s, padding="valid", use_bias=False, reuse=tf.AUTO_REUSE, name=scope)
         if(M == 3):
             paddings = (np.array(temp_p)).repeat(2).reshape(5, 2)
             pad = tf.pad(input, paddings, "CONSTANT")
             temp_conv = tf.layers.conv3d(
-                pad, Cout, k, strides=s, padding="valid", reuse=tf.AUTO_REUSE, name=scope)
+                pad, Cout, k, strides=s, padding="valid", use_bias=False, reuse=tf.AUTO_REUSE, name=scope)
         if bn:
             temp_conv = tf.layers.batch_normalization(
                 temp_conv, axis=-1, fused=True, training=training, reuse=tf.AUTO_REUSE, name=scope)
@@ -196,7 +196,7 @@ def Deconv2D(Cin, Cout, k, s, p, input, training=True, bn=True, name='deconv'):
     pad = tf.pad(input, paddings, "CONSTANT")
     with tf.variable_scope(name) as scope:
         temp_conv = tf.layers.conv2d_transpose(
-            pad, Cout, k, strides=s, padding="SAME", reuse=tf.AUTO_REUSE, name=scope)
+            pad, Cout, k, strides=s, padding="SAME", use_bias=False, reuse=tf.AUTO_REUSE, name=scope)
         if bn:
             temp_conv = tf.layers.batch_normalization(
                 temp_conv, axis=-1, fused=True, training=training, reuse=tf.AUTO_REUSE, name=scope)

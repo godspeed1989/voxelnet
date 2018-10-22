@@ -568,10 +568,10 @@ def cal_anchors():
         r_i = np.ones_like(cx)
         cz = np.ones_like(cx)
         if cfg.ANCHOR_XY_TYPES == 2 and cfg.ANCHOR_Z_TYPES == 2:
-            cz[..., 0], r_r[..., 0], r_i[..., 0] = 0.9*cfg.ANCHOR_Z, np.cos(45 / 180 * np.pi), np.sin(45 / 180 * np.pi)
-            cz[..., 1], r_r[..., 1], r_i[..., 1] = 0.9*cfg.ANCHOR_Z, np.cos(135 / 180 * np.pi), np.sin(135 / 180 * np.pi)
-            cz[..., 2], r_r[..., 2], r_i[..., 2] = 1.1*cfg.ANCHOR_Z, np.cos(45 / 180 * np.pi), np.sin(45 / 180 * np.pi)
-            cz[..., 3], r_r[..., 3], r_i[..., 3] = 1.1*cfg.ANCHOR_Z, np.cos(135 / 180 * np.pi), np.sin(135 / 180 * np.pi)
+            cz[..., 0], r_r[..., 0], r_i[..., 0] = 0.9*cfg.ANCHOR_Z, np.cos(0 / 180 * np.pi), np.sin(0 / 180 * np.pi)
+            cz[..., 1], r_r[..., 1], r_i[..., 1] = 0.9*cfg.ANCHOR_Z, np.cos(90 / 180 * np.pi), np.sin(90 / 180 * np.pi)
+            cz[..., 2], r_r[..., 2], r_i[..., 2] = 1.1*cfg.ANCHOR_Z, np.cos(0 / 180 * np.pi), np.sin(0 / 180 * np.pi)
+            cz[..., 3], r_r[..., 3], r_i[..., 3] = 1.1*cfg.ANCHOR_Z, np.cos(90 / 180 * np.pi), np.sin(90 / 180 * np.pi)
         elif cfg.ANCHOR_XY_TYPES == 4 and cfg.ANCHOR_Z_TYPES == 2:
             cz[..., 0], r_r[..., 0], r_i[..., 0] = 0.9*cfg.ANCHOR_Z, np.cos(0), np.sin(0)
             cz[..., 1], r_r[..., 1], r_i[..., 1] = 0.9*cfg.ANCHOR_Z, np.cos(90 / 180 * np.pi), np.sin(90 / 180 * np.pi)
@@ -619,6 +619,7 @@ def cal_rpn_target(tags, labels, feature_map_shape, anchors, cls='Car', coordina
     batch_size = labels.shape[0]
     batch_gt_boxes3d = label_to_gt_box3d(tags, labels, cls=cls, coordinate=coordinate)
     # defined in eq(1) in 2.2
+    anchors = anchors.copy()
     anchors_reshaped = anchors.reshape(-1, cfg.ANCHOR_LEN)
     anchors_d = np.sqrt(anchors_reshaped[:, 4]**2 + anchors_reshaped[:, 5]**2)
     pos_equal_one = np.zeros((batch_size, *feature_map_shape, cfg.ANCHOR_TYPES))
@@ -678,18 +679,6 @@ def cal_rpn_target(tags, labels, feature_map_shape, anchors, cls='Car', coordina
         id_pos = np.concatenate([id_pos, id_highest])
         id_pos_gt = np.concatenate([id_pos_gt, id_highest_gt])
 
-        # filter anchors by orientation
-        '''
-        if cfg.COMPLEX_ORI:
-            anchors_angle = np.arctan2(anchors_reshaped[id_pos, 7], anchors_reshaped[id_pos, 6])
-        else:
-            anchors_angle = anchors_reshaped[id_pos, 6]
-        gt_boxes_angle = batch_gt_boxes3d[batch_id][id_pos_gt, 6]
-        sel_by_angle = np.where(np.abs(anchors_angle - gt_boxes_angle) < np.pi/2)[0]
-        #print('select by angle', sel_by_angle.shape[0], 'from', id_pos.shape[0])
-        id_pos, id_pos_gt = id_pos[sel_by_angle], id_pos_gt[sel_by_angle]
-        '''
-
         # TODO: uniquify the array in a more scientific way
         id_pos, index = np.unique(id_pos, return_index=True)
         id_pos_gt = id_pos_gt[index]
@@ -708,13 +697,18 @@ def cal_rpn_target(tags, labels, feature_map_shape, anchors, cls='Car', coordina
             gt_boxes3d = np.concatenate([batch_gt_pos, batch_gt_angle_r, batch_gt_angle_i], axis=-1)
         else:
             gt_boxes3d = batch_gt_boxes3d[batch_id]
+
+        #zg = zg + hg / 2
+        gt_boxes3d[..., 2] = gt_boxes3d[..., 2] + gt_boxes3d[..., 3] / 2        
+        #za = za + ha / 2
+        anchors_reshaped[..., 2] = anchors_reshaped[..., 2] + anchors_reshaped[..., 3] / 2
         # ATTENTION: index_z should be np.array
         targets[batch_id, index_x, index_y, np.array(index_z) * cfg.ANCHOR_LEN + 0] = (
             gt_boxes3d[id_pos_gt, 0] - anchors_reshaped[id_pos, 0]) / anchors_d[id_pos]
         targets[batch_id, index_x, index_y, np.array(index_z) * cfg.ANCHOR_LEN + 1] = (
             gt_boxes3d[id_pos_gt, 1] - anchors_reshaped[id_pos, 1]) / anchors_d[id_pos]
         targets[batch_id, index_x, index_y, np.array(index_z) * cfg.ANCHOR_LEN + 2] = (
-            gt_boxes3d[id_pos_gt, 2] - anchors_reshaped[id_pos, 2]) / cfg.ANCHOR_H
+            gt_boxes3d[id_pos_gt, 2] - anchors_reshaped[id_pos, 2]) / cfg.ANCHOR_H  # zt = (zg - za) / ha
         targets[batch_id, index_x, index_y, np.array(index_z) * cfg.ANCHOR_LEN + 3] = np.log(
             gt_boxes3d[id_pos_gt, 3] / anchors_reshaped[id_pos, 3])
         targets[batch_id, index_x, index_y, np.array(index_z) * cfg.ANCHOR_LEN + 4] = np.log(
@@ -746,7 +740,10 @@ def delta_to_boxes3d(deltas, anchors, coordinate='lidar'):
 
     # Ouput:
     #   boxes3d: (N, w*l*AT, 7)
+    anchors = anchors.copy()
     anchors_reshaped = anchors.reshape(-1, cfg.ANCHOR_LEN)
+    # za = za + ha / 2
+    anchors_reshaped[..., 2] = anchors_reshaped[..., 2] + anchors_reshaped[..., 3] / 2
     deltas = deltas.reshape(deltas.shape[0], -1, cfg.ANCHOR_LEN)
     anchors_d = np.sqrt(anchors_reshaped[:, 4]**2 + anchors_reshaped[:, 5]**2)
     boxes3d = np.zeros([deltas.shape[0], deltas.shape[1], 7])

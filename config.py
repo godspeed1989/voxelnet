@@ -33,13 +33,13 @@ __C.CALIB_DIR = '/mine/KITTI_DAT/calib/training'
 
 # select FeatureNet / FeatureNetSIFT / FeatureNet_PntNet /
 #        FeatureNet_PntNet1 / FeatureNet_Simple / FeatureNet_AE / FeatureNet_VAE
-__C.FEATURE_NET_TYPE = 'FeatureNet_PntNet1'
+__C.FEATURE_NET_TYPE = 'FeatureNet'
 
 __C.FeatureNet_AE_WPATH = None
 __C.FeatureNet_VAE_WPATH = None
 
 # select voxelnet / res_sequeeze / res_net / avod / avod_lite / rfbnet
-__C.RPN_TYPE = 'avod'
+__C.RPN_TYPE = 'voxelnet'
 
 # select voxelnet / focal_loss
 __C.CLS_LOSS_TYPE = 'voxelnet'
@@ -77,7 +77,7 @@ if __C.DETECT_OBJ == 'Car':
     else:
         __C.VOXEL_Z_SIZE = 0.2
         __C.GRID_Z_SIZE = int((__C.Z_MAX - __C.Z_MIN) / __C.VOXEL_Z_SIZE)
-    __C.VOXEL_POINT_COUNT = 64
+    __C.VOXEL_POINT_COUNT = 128
     __C.INPUT_WIDTH = __C.GRID_X_SIZE
     __C.INPUT_HEIGHT = __C.GRID_Y_SIZE
     __C.FEATURE_RATIO = 2
@@ -176,7 +176,7 @@ if __C.DATA_SETS_TYPE == 'kitti':
     ])
 
 # 2 / 4
-__C.ANCHOR_XY_TYPES = 4
+__C.ANCHOR_XY_TYPES = 2
 # 1 / 2
 __C.ANCHOR_Z_TYPES = 2
 __C.ANCHOR_TYPES = __C.ANCHOR_XY_TYPES * __C.ANCHOR_Z_TYPES
