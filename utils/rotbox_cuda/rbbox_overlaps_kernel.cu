@@ -432,7 +432,8 @@ __device__ inline float devRotateIoU_3d(float const * const region1, float const
   float h1 = region1[3];
   float z2 = region2[2];
   float h2 = region2[3];
-  float z_intersect = cal_z_intersect(z1, h1, z2, h2);
+  //float z_intersect = cal_z_intersect(z1, h1, z2, h2);
+  float z_intersect = 1.0;
   float share = xy_area_inter * z_intersect;
   float result = share / (xy_area1 * h1 + xy_area2 * h2 - share);
 

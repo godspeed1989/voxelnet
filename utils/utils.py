@@ -699,9 +699,9 @@ def cal_rpn_target(tags, labels, feature_map_shape, anchors, cls='Car', coordina
             gt_boxes3d = batch_gt_boxes3d[batch_id]
 
         #zg = zg + hg / 2
-        gt_boxes3d[..., 2] = gt_boxes3d[..., 2] + gt_boxes3d[..., 3] / 2        
+        #gt_boxes3d[..., 2] = gt_boxes3d[..., 2] + gt_boxes3d[..., 3] / 2        
         #za = za + ha / 2
-        anchors_reshaped[..., 2] = anchors_reshaped[..., 2] + anchors_reshaped[..., 3] / 2
+        #anchors_reshaped[..., 2] = anchors_reshaped[..., 2] + anchors_reshaped[..., 3] / 2
         # ATTENTION: index_z should be np.array
         targets[batch_id, index_x, index_y, np.array(index_z) * cfg.ANCHOR_LEN + 0] = (
             gt_boxes3d[id_pos_gt, 0] - anchors_reshaped[id_pos, 0]) / anchors_d[id_pos]
@@ -743,7 +743,7 @@ def delta_to_boxes3d(deltas, anchors, coordinate='lidar'):
     anchors = anchors.copy()
     anchors_reshaped = anchors.reshape(-1, cfg.ANCHOR_LEN)
     # za = za + ha / 2
-    anchors_reshaped[..., 2] = anchors_reshaped[..., 2] + anchors_reshaped[..., 3] / 2
+    #anchors_reshaped[..., 2] = anchors_reshaped[..., 2] + anchors_reshaped[..., 3] / 2
     deltas = deltas.reshape(deltas.shape[0], -1, cfg.ANCHOR_LEN)
     anchors_d = np.sqrt(anchors_reshaped[:, 4]**2 + anchors_reshaped[:, 5]**2)
     boxes3d = np.zeros([deltas.shape[0], deltas.shape[1], 7])
@@ -760,7 +760,7 @@ def delta_to_boxes3d(deltas, anchors, coordinate='lidar'):
     else:
         boxes3d[..., 6] = deltas[..., 6] + anchors_reshaped[..., 6]
     #zg = zg - hg / 2
-    boxes3d[..., 2] = boxes3d[..., 2] - boxes3d[..., 3] / 2
+    #boxes3d[..., 2] = boxes3d[..., 2] - boxes3d[..., 3] / 2
     return boxes3d
 
 

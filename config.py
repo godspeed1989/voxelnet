@@ -218,7 +218,7 @@ if __C.DETECT_OBJ == 'Cyclist':
 # for rpn nms
 __C.RPN_NMS_POST_TOPK = 20
 __C.RPN_NMS_THRESH = 0.1
-__C.RPN_SCORE_THRESH = 0.75
+__C.RPN_SCORE_THRESH = 0.95
 __C.RPN_NMS_MAX = 200
 
 # cal IoU method: 2d_standup / 3d_cv2 / 3d_rbbox
