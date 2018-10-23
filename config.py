@@ -39,7 +39,7 @@ __C.FeatureNet_AE_WPATH = None
 __C.FeatureNet_VAE_WPATH = None
 
 # select voxelnet / res_sequeeze / res_net / avod / avod_lite / rfbnet
-__C.RPN_TYPE = 'voxelnet'
+__C.RPN_TYPE = 'avod'
 
 # select voxelnet / focal_loss
 __C.CLS_LOSS_TYPE = 'voxelnet'

@@ -754,12 +754,13 @@ def delta_to_boxes3d(deltas, anchors, coordinate='lidar'):
     boxes3d[..., [3, 4, 5]] = np.exp(
         deltas[..., [3, 4, 5]]) * anchors_reshaped[..., [3, 4, 5]]
     if cfg.COMPLEX_ORI:
-        rl = deltas[..., 7] + anchors_reshaped[..., 7]
-        im = deltas[..., 6] + anchors_reshaped[..., 6]
+        rl = deltas[..., 7] + anchors_reshaped[..., 7] # sin
+        im = deltas[..., 6] + anchors_reshaped[..., 6] # cos
         boxes3d[..., 6] = np.arctan2(rl, im)
     else:
         boxes3d[..., 6] = deltas[..., 6] + anchors_reshaped[..., 6]
-
+    #zg = zg - hg / 2
+    boxes3d[..., 2] = boxes3d[..., 2] - boxes3d[..., 3] / 2
     return boxes3d
 
 

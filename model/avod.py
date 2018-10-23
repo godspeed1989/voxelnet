@@ -187,7 +187,7 @@ def avod_mob(inputs, training):
 def Conv2D(inputs, Cout, k, s, pad, training, activation=True, bn=True, name='conv'):
     with tf.variable_scope(name) as scope:
         temp_conv = tf.layers.conv2d(
-            inputs, Cout, k, strides=s, padding=pad, reuse=tf.AUTO_REUSE, name=scope)
+            inputs, Cout, k, strides=s, padding=pad, use_bias=False, reuse=tf.AUTO_REUSE, name=scope)
         if bn:
             temp_conv = tf.layers.batch_normalization(
                 temp_conv, axis=-1, fused=True, training=training, reuse=tf.AUTO_REUSE, name=scope)
@@ -199,7 +199,7 @@ def Conv2D(inputs, Cout, k, s, pad, training, activation=True, bn=True, name='co
 def Separable_Conv2D(inputs, Cout, k, s, pad, dm, training, activation=True, bn=True, name='conv'):
     with tf.variable_scope(name) as scope:
         temp_conv = tf.layers.separable_conv2d(
-            inputs, Cout, k, strides=s, padding=pad, depth_multiplier=dm, reuse=tf.AUTO_REUSE, name=scope)
+            inputs, Cout, k, strides=s, padding=pad, use_bias=False, depth_multiplier=dm, reuse=tf.AUTO_REUSE, name=scope)
         if bn:
             temp_conv = tf.layers.batch_normalization(
                 temp_conv, axis=-1, fused=True, training=training, reuse=tf.AUTO_REUSE, name=scope)
@@ -211,7 +211,7 @@ def Separable_Conv2D(inputs, Cout, k, s, pad, dm, training, activation=True, bn=
 def Deconv2D(inputs, Cout, k, s, pad, training, bn=True, name='deconv'):
     with tf.variable_scope(name) as scope:
         temp_conv = tf.layers.conv2d_transpose(
-            inputs, Cout, k, strides=s, padding=pad, reuse=tf.AUTO_REUSE, name=scope)
+            inputs, Cout, k, strides=s, padding=pad, use_bias=False, reuse=tf.AUTO_REUSE, name=scope)
         if bn:
             temp_conv = tf.layers.batch_normalization(
                 temp_conv, axis=-1, fused=True, training=training, reuse=tf.AUTO_REUSE, name=scope)
