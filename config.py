@@ -181,11 +181,12 @@ __C.ANCHOR_XY_TYPES = 2
 __C.ANCHOR_Z_TYPES = 2
 __C.ANCHOR_TYPES = __C.ANCHOR_XY_TYPES * __C.ANCHOR_Z_TYPES
 # complex orientation representation
-__C.COMPLEX_ORI = True
+__C.COMPLEX_ORI = False
 if __C.COMPLEX_ORI:
     __C.ANCHOR_LEN = 8 # x y z h w l rr ri
 else:
     __C.ANCHOR_LEN = 7 # x y z h w l r
+__C.USE_SIN_DIFFERENCE = True
 
 # Faster-RCNN/SSD Hyper params
 if __C.DETECT_OBJ == 'Car':

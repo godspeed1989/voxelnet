@@ -13,7 +13,7 @@ class MiddleAndRPN:
         # scale should be the output of feature learning network
         self.input_data = input_data
         self.training = training
-        # groundtruth(target) - each anchor box, represent as △x, △y, △z, △l, △w, △h, rotation
+        # groundtruth(target) - each anchor box, represent as △x, △y, △z, △h, △w, △l, rotation
         self.targets = tf.placeholder(
             tf.float32, [None, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, cfg.ANCHOR_TYPES * cfg.ANCHOR_LEN])
         # postive anchors equal to one and others equal to zero
@@ -124,6 +124,9 @@ class MiddleAndRPN:
             # softmax output for positive anchor and negative anchor, scale = [None, FEATURE_HEIGHT, FEATURE_WIDTH, AT]
             # just for one class now, use sigmoid
             self.p_pos = tf.sigmoid(p_map)
+            # Direction predict map
+            #d_map = ConvMD(2, Cout, cfg.ANCHOR_TYPES * 2, k=1, s=(1, 1), p=(0, 0),
+            #               input=temp_conv, training=self.training, activation=False, bn=False, name='conv22')
 
             # ------- classification loss --------
             if cfg.CLS_LOSS_TYPE == 'focal_loss':
@@ -142,12 +145,29 @@ class MiddleAndRPN:
                 self.cls_pos_loss_rec = tf.reduce_sum( self.cls_pos_loss )
                 self.cls_neg_loss_rec = tf.reduce_sum( self.cls_neg_loss )
 
+            def add_sin_difference(box_preds, reg_targets):
+                assert cfg.ANCHOR_LEN == 7
+                # sin(a - b) = sinacosb-cosasinb
+                boxes1 = tf.reshape(box_preds, [-1, 7])
+                boxes2 = tf.reshape(reg_targets, [-1, 7])
+                rad_pred_encoding = tf.sin(boxes1[..., -1:]) * tf.cos(boxes2[..., -1:])
+                rad_gt_encoding = tf.cos(boxes1[..., -1:]) * tf.sin(boxes2[..., -1:])
+                boxes1 = tf.concat([boxes1[..., :-1], rad_pred_encoding], axis=-1)
+                boxes2 = tf.concat([boxes2[..., :-1], rad_gt_encoding], axis=-1)
+                box_preds = tf.reshape(boxes1, [-1, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, cfg.ANCHOR_TYPES * cfg.ANCHOR_LEN])
+                reg_targets = tf.reshape(boxes2, [-1, cfg.FEATURE_HEIGHT, cfg.FEATURE_WIDTH, cfg.ANCHOR_TYPES * cfg.ANCHOR_LEN])
+                return box_preds, reg_targets
+            if cfg.USE_SIN_DIFFERENCE:
+                box_preds, reg_targets = add_sin_difference(r_map, self.targets)
+            else:
+                box_preds, reg_targets = r_map, self.targets
+
             # -------- regression loss --------
-            self.reg_loss = smooth_l1(r_map * self.pos_equal_one_for_reg, self.targets * self.pos_equal_one_for_reg, sigma)
+            self.reg_loss = smooth_l1(box_preds * self.pos_equal_one_for_reg, reg_targets * self.pos_equal_one_for_reg, sigma)
             self.reg_loss = self.reg_loss / self.pos_equal_one_sum
             self.reg_loss = tf.reduce_sum(self.reg_loss)
 
-            self.loss = self.cls_loss + self.reg_loss
+            self.loss = 1 * self.cls_loss + 2 * self.reg_loss
 
             self.delta_output = r_map
             self.prob_output = self.p_pos
