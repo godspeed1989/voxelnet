@@ -1,16 +1,18 @@
+import numpy as np
 import tensorflow as tf
-from model.rfbnet import BasicRFB, conv_dw
 
 if __name__ != '__main__':
     from config import cfg
+else:
+    from easydict import EasyDict as edict
+    cfg = edict()
+    cfg.FEATURE_RATIO = 2
 
 def avod_lite(inputs, training):
     # Encoder
     # 1 -> 1/2
     conv1 = Separable_Conv2D(inputs, Cout=32, k=3, s=(1, 1), dm=3,
                    pad='same', training=training, name='conv_e11')
-    if False:
-        conv1 = BasicRFB(conv1, training)
     conv1 = Conv2D(conv1, Cout=32, k=3, s=(1, 1),
                    pad='same', training=training, name='conv_e12')
     pool1 = tf.layers.max_pooling2d(conv1, 2, strides=2, padding='valid')
@@ -221,4 +223,6 @@ if __name__ == '__main__':
     inputs = tf.placeholder(tf.float32, [None, 360, 1200, 32])
     training = tf.placeholder(tf.bool)
     ret = avod(inputs, training)
+    parameter_num1 = np.sum([np.prod(v.shape.as_list()) for v in tf.trainable_variables()])
+    print('Parameter number: {}'.format(parameter_num1))
     print(ret.shape)

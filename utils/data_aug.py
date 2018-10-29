@@ -25,7 +25,7 @@ def aug_data(tag, object_dir, aug_pc=True, use_newtag=False):
     assert rgb is not None, print('ERROR rgb {} {}'.format(object_dir, tag))
     rgb = cv2.resize(rgb, (cfg.IMAGE_WIDTH, cfg.IMAGE_HEIGHT))
     #
-    lidar_path = os.path.join(object_dir, 'velodyne', tag + '.bin')
+    lidar_path = os.path.join(object_dir, cfg.VELODYNE_DIR, tag + '.bin')
     lidar = np.fromfile(lidar_path, dtype=np.float32).reshape(-1, 4)
     assert lidar.shape[0], print('ERROR lidar {} {}'.format(object_dir, tag))
     #

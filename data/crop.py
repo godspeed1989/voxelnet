@@ -1,3 +1,5 @@
+import os
+import glob
 import numpy as np
 from scipy.misc import imread
 
@@ -50,7 +52,6 @@ def project_velo_points_in_img(pts3d, T_cam_velo, Rrect, Prect):
 
 
 def align_img_and_pc(img_dir, pc_dir, calib_dir):
-    
     img = imread(img_dir)
     pts = load_velodyne_points( pc_dir )
     P, Tr_velo_to_cam, R_cam_to_rect = load_calib(calib_dir)
@@ -78,25 +79,26 @@ def align_img_and_pc(img_dir, pc_dir, calib_dir):
     points = np.array(points)
     return points
 
+CALIB_ROOT = '/mine/KITTI_DAT/calib/testing/'
 # update the following directories
-IMG_ROOT = '/media/hdc/KITTI/image/training/image_2/'
-PC_ROOT = '/media/hdc/KITTI/point_cloud/raw_bin_files/training/velodyne/'
-CALIB_ROOT = '/media/hdc/KITTI/calib/data_object_calib/training/calib/'
+SPLIT = 'testing'
+IMG_ROOT = '/mine/KITTI_DAT/' + SPLIT + '/image_2/'
+PC_IN_ROOT = '/mine/KITTI_DAT/' + SPLIT + '/velodyne/'
+PC_OUT_ROOT = '/mine/KITTI_DAT/' + SPLIT + '/velodyne_crop/'
 
+if not os.path.exists(PC_OUT_ROOT):
+    os.makedirs(PC_OUT_ROOT)
 
+f_lidar = glob.glob(os.path.join(PC_IN_ROOT, '*.bin'))
+data_tag = [name.split('/')[-1].split('.')[-2] for name in f_lidar]
 
-for frame in range(0, 7481):
-    img_dir = IMG_ROOT + '%06d.png' % frame
-    pc_dir = PC_ROOT + '%06d.bin' % frame
-    calib_dir = CALIB_ROOT + '%06d.txt' % frame
+for frame in data_tag:
+    print(frame)
+    img_dir = IMG_ROOT + '{}.png'.format(frame)
+    pc_dir = PC_IN_ROOT + '{}.bin'.format(frame)
+    calib_dir = CALIB_ROOT + '{}.txt'.format(frame)
 
     points = align_img_and_pc(img_dir, pc_dir, calib_dir)
-    
-    output_name = PC_ROOT + frame + '.bin'
+
+    output_name = PC_OUT_ROOT + frame + '.bin'
     points[:,:4].astype('float32').tofile(output_name)
-
-
-
-
-
-

@@ -77,10 +77,10 @@ def pointcnv(M, pc_feature, Cout, scope, training, activation=True):
     """
     with tf.variable_scope(scope):
         if M == 1:
-            pc_feature = tf.layers.conv1d(pc_feature, Cout, kernel_size=1, strides=1,
+            pc_feature = tf.layers.conv1d(pc_feature, Cout, kernel_size=1, strides=1, use_bias=False,
                             padding="valid", reuse=tf.AUTO_REUSE, name='conv1d')
         elif M == 2:
-            pc_feature = tf.layers.conv2d(pc_feature, Cout, kernel_size=1, strides=1,
+            pc_feature = tf.layers.conv2d(pc_feature, Cout, kernel_size=1, strides=1, use_bias=False,
                             padding="valid", reuse=tf.AUTO_REUSE, name='conv2d')
         pc_feature = tf.layers.batch_normalization(pc_feature, axis=-1,
                         fused=True, training=training, reuse=tf.AUTO_REUSE, name='bn')
@@ -96,9 +96,6 @@ class VFELayer(object):
         self.batch_size = batch_size
 
     def apply(self, inputs, mask, training):
-        # [K, T, 1] -> [K, T, 64]
-        mask64 = tf.tile(mask, [1, 1, 64])
-
         if False:
             nn = 4
             nn_feature = GetNNFeature(inputs, nn, self.batch_size, 'nn_feature')
@@ -109,17 +106,10 @@ class VFELayer(object):
         else:
             nn_feature = inputs
 
-        pc_feature = pointcnv(1, inputs, 32, 'vfe_pc_conv1', training)
-        pc_feature = pointcnv(1, pc_feature, 64, 'vfe_pc_conv2', training)
-        pc_feature = tf.multiply(pc_feature, tf.cast(mask64, tf.float32))
+        feature = pointcnv(1, inputs, 32, 'vfe_conv1', training)
+        feature = pointcnv(1, feature, 64, 'vfe_conv2', training)
+        feature = pointcnv(1, feature, self.units, 'vfe_out', training, activation=False)
 
-        feature = tf.concat([pc_feature, nn_feature], axis=-1)
-        feature = pointcnv(1, feature, 128, 'vfe_conv1', training)
-        feature = pointcnv(1, feature, self.units, 'vfe_conv2', training, activation=False)
-
-        # [K, T, 1] -> [K, T, units]
-        mask_units = tf.tile(mask, [1, 1, self.units])
-        feature = tf.multiply(feature, tf.cast(mask_units, tf.float32))
         # [K, T, units] -> [K, units]
         aggregated = tf.reduce_max(feature, axis=1, keepdims=False)
 
@@ -145,16 +135,16 @@ class FeatureNet_PntNet1(object):
         self.coordinate_pl = tf.placeholder(tf.int64, [None, 4], name='coordinate')
 
         total_voxels = tf.reduce_sum(self.voxcnt_pl)
-        Cout = 64
+        Cout = 128
         self.vfe = VFELayer(total_voxels, Cout, 'VFE')
-        voxelwise = self.vfe.apply(self.feature_pl[:,:,:3], self.mask_pl, self.training)
+        voxelwise = self.vfe.apply(self.feature_pl, self.mask_pl, self.training)
 
-        max_intensity = tf.reduce_max(self.feature_pl[:,:,3], axis=-1, keepdims=True)
-        number_vox = tf.expand_dims(tf.cast(self.number_pl, tf.float32), axis=-1) / cfg.VOXEL_POINT_COUNT
-        voxelwise = tf.concat((voxelwise, max_intensity, number_vox), axis=-1)
+        #max_intensity = tf.reduce_max(self.feature_pl[:,:,3], axis=-1, keepdims=True)
+        #number_vox = tf.expand_dims(tf.cast(self.number_pl, tf.float32), axis=-1) / cfg.VOXEL_POINT_COUNT
+        #voxelwise = tf.concat((voxelwise, max_intensity, number_vox), axis=-1)
 
         self.outputs = tf.scatter_nd(
-            self.coordinate_pl, voxelwise, [self.batch_size, cfg.GRID_Z_SIZE, cfg.GRID_Y_SIZE, cfg.GRID_X_SIZE, Cout+2])
+            self.coordinate_pl, voxelwise, [self.batch_size, cfg.GRID_Z_SIZE, cfg.GRID_Y_SIZE, cfg.GRID_X_SIZE, Cout])
 
 if __name__ == '__main__':
     VOXEL_POINT_COUNT = 50

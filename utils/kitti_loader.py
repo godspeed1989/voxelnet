@@ -55,7 +55,7 @@ VAL_POOL = multiprocessing.Pool(2)
 def iterate_data(data_dir, has_voxel=False, shuffle=False, aug=False,
                  is_testset=False, batch_size=1, multi_gpu_sum=1):
     f_rgb = glob.glob(os.path.join(data_dir, 'image_2', '*.png'))
-    f_lidar = glob.glob(os.path.join(data_dir, 'velodyne', '*.bin'))
+    f_lidar = glob.glob(os.path.join(data_dir, cfg.VELODYNE_DIR, '*.bin'))
     if is_testset:
         f_label = None
     else:
@@ -122,10 +122,12 @@ def iterate_data(data_dir, has_voxel=False, shuffle=False, aug=False,
 
         yield ret
 
+_test_data_idx = 0
+
 # Random sample single batch data
 def sample_test_data(data_dir, batch_size=1, has_voxel=False, multi_gpu_sum=1):
     f_rgb = glob.glob(os.path.join(data_dir, 'image_2', '*.png'))
-    f_lidar = glob.glob(os.path.join(data_dir, 'velodyne', '*.bin'))
+    f_lidar = glob.glob(os.path.join(data_dir, cfg.VELODYNE_DIR, '*.bin'))
     f_label = glob.glob(os.path.join(data_dir, 'label_2', '*.txt'))
     if has_voxel:
         f_voxel = glob.glob(os.path.join(data_dir, 'voxel', '*.npz'))
@@ -142,10 +144,11 @@ def sample_test_data(data_dir, batch_size=1, has_voxel=False, multi_gpu_sum=1):
     if has_voxel: assert len(f_voxel) == len(f_label), "dataset folder is not correct"
 
     nums = len(f_rgb)
-
-    indices = list(range(nums))
-    np.random.shuffle(indices)
-    excerpt = indices[0:batch_size]
+    global _test_data_idx
+    if _test_data_idx+batch_size > nums:
+        _test_data_idx = 0
+    excerpt = np.arange(_test_data_idx, _test_data_idx+batch_size)
+    _test_data_idx += batch_size
 
     proc_val=Processor(data_tag, f_rgb, f_lidar, f_label, None, data_dir, False, False)
 

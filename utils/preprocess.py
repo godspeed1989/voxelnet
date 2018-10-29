@@ -114,7 +114,7 @@ def process_pointcloud(tag, lidar, cls=cfg.DETECT_OBJ):
     if cfg.REMOVE_GROUND:
         _, point_cloud = filter_ground(lidar)
     else:
-        point_cloud = lidar
+        point_cloud = lidar.copy()
     assert point_cloud.shape[0], 'ERROR size {}'.format(tag)
 
     np.random.shuffle(point_cloud)
