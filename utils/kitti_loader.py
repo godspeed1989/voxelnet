@@ -15,7 +15,8 @@ from utils.data_aug import aug_data
 from utils.preprocess import process_pointcloud
 
 class Processor:
-    def __init__(self, data_tag, f_rgb, f_lidar, f_label, f_voxel, data_dir, aug, is_testset):
+    def __init__(self, data_tag, f_rgb, f_lidar, f_label, f_voxel, data_dir,
+                 aug, is_testset, db_sampler=None):
         self.data_tag=data_tag
         self.f_rgb = f_rgb
         self.f_lidar = f_lidar
@@ -24,10 +25,11 @@ class Processor:
         self.data_dir = data_dir
         self.aug = aug
         self.is_testset = is_testset
+        self.db_sampler = db_sampler
 
     def __call__(self,load_index):
         if self.aug:
-            ret = aug_data(self.data_tag[load_index], self.data_dir)
+            ret = aug_data(self.data_tag[load_index], self.data_dir, sampler=self.db_sampler)
         else:
             rgb = cv2.resize(cv2.imread(self.f_rgb[load_index]), (cfg.IMAGE_WIDTH, cfg.IMAGE_HEIGHT))
             raw_lidar = np.fromfile(self.f_lidar[load_index], dtype=np.float32).reshape((-1, 4))
@@ -52,7 +54,7 @@ class Processor:
 TRAIN_POOL = multiprocessing.Pool(4)
 VAL_POOL = multiprocessing.Pool(2)
 
-def iterate_data(data_dir, has_voxel=False, shuffle=False, aug=False,
+def iterate_data(data_dir, db_sampler=None, shuffle=False, aug=False,
                  is_testset=False, batch_size=1, multi_gpu_sum=1):
     f_rgb = glob.glob(os.path.join(data_dir, 'image_2', '*.png'))
     f_lidar = glob.glob(os.path.join(data_dir, cfg.VELODYNE_DIR, '*.bin'))
@@ -61,11 +63,7 @@ def iterate_data(data_dir, has_voxel=False, shuffle=False, aug=False,
     else:
         f_label = glob.glob(os.path.join(data_dir, 'label_2', '*.txt'))
         f_label.sort()
-    if has_voxel:
-        f_voxel = glob.glob(os.path.join(data_dir, 'voxel', '*.npz'))
-        f_voxel.sort()
-    else:
-        f_voxel = None
+    f_voxel = None
     f_rgb.sort()
     f_lidar.sort()
     data_tag = [name.split('/')[-1].split('.')[-2] for name in f_rgb]
@@ -73,7 +71,6 @@ def iterate_data(data_dir, has_voxel=False, shuffle=False, aug=False,
     assert len(data_tag) != 0, "dataset folder is not correct"
     assert len(data_tag) == len(f_rgb) == len(f_lidar), "dataset folder is not correct"
     if not is_testset: assert len(data_tag) == len(f_label), "dataset folder is not correct"
-    if has_voxel: assert len(data_tag) == len(f_voxel), "dataset folder is not correct"
 
     nums = len(f_rgb)
     indices = list(range(nums))
@@ -82,7 +79,8 @@ def iterate_data(data_dir, has_voxel=False, shuffle=False, aug=False,
 
     num_batches = int(math.floor( nums / float(batch_size) ))
 
-    proc=Processor(data_tag, f_rgb, f_lidar, f_label, f_voxel, data_dir, aug, is_testset)
+    proc=Processor(data_tag, f_rgb, f_lidar, f_label, f_voxel, data_dir,
+                   aug, is_testset, db_sampler)
 
     for batch_idx in range(num_batches):
         start_idx = batch_idx * batch_size
@@ -125,15 +123,11 @@ def iterate_data(data_dir, has_voxel=False, shuffle=False, aug=False,
 _test_data_idx = 0
 
 # Random sample single batch data
-def sample_test_data(data_dir, batch_size=1, has_voxel=False, multi_gpu_sum=1):
+def sample_test_data(data_dir, batch_size=1, multi_gpu_sum=1):
     f_rgb = glob.glob(os.path.join(data_dir, 'image_2', '*.png'))
     f_lidar = glob.glob(os.path.join(data_dir, cfg.VELODYNE_DIR, '*.bin'))
     f_label = glob.glob(os.path.join(data_dir, 'label_2', '*.txt'))
-    if has_voxel:
-        f_voxel = glob.glob(os.path.join(data_dir, 'voxel', '*.npz'))
-        f_voxel.sort()
-    else:
-        f_voxel = None
+    f_voxel = None
     f_rgb.sort()
     f_lidar.sort()
     f_label.sort()
@@ -141,7 +135,6 @@ def sample_test_data(data_dir, batch_size=1, has_voxel=False, multi_gpu_sum=1):
 
     assert len(data_tag) != 0, "dataset folder is not correct"
     assert len(data_tag) == len(f_rgb) == len(f_lidar) == len(f_label), "dataset folder is not correct"
-    if has_voxel: assert len(f_voxel) == len(f_label), "dataset folder is not correct"
 
     nums = len(f_rgb)
     global _test_data_idx

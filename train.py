@@ -13,6 +13,7 @@ from config import cfg
 from model.model import RPN3D
 from utils.kitti_loader import iterate_data, sample_test_data
 from utils.utils import box3d_to_label, load_calib
+from utils.db_sampler import DataBaseSampler
 from train_hook import check_if_should_pause
 from termcolor import cprint
 import warnings
@@ -49,12 +50,10 @@ args = parser.parse_args()
 dataset_dir = cfg.DATA_DIR
 if cfg.USE_AUGED_DATA:
     AUG_DATA = False
-    HAS_VOXEL = True
     train_dir = os.path.join(cfg.DATA_DIR, 'training', cfg.AUG_DATA_FOLDER)
     val_dir = os.path.join(cfg.DATA_DIR, 'validation', cfg.AUG_DATA_FOLDER)
 else:
     AUG_DATA = True
-    HAS_VOXEL = False
     train_dir = os.path.join(cfg.DATA_DIR, 'training50')
     val_dir = os.path.join(cfg.DATA_DIR, 'validation50')
 log_dir = os.path.join('./log', args.tag)
@@ -62,6 +61,9 @@ save_model_dir = os.path.join('./save_model', args.tag)
 os.makedirs(log_dir, exist_ok=True)
 os.makedirs(save_model_dir, exist_ok=True)
 
+database_info_path = os.path.join(dataset_dir, "kitti_dbinfos_train.pkl")
+sampler = DataBaseSampler(dataset_dir, database_info_path, global_rot_range=[0.5,0.5])
+sampler.print_class_name()
 
 def main(_):
     global log_f
@@ -131,7 +133,7 @@ def main(_):
             for epoch in range(start_epoch, args.max_epoch):
                 counter = 0
                 batch_time = time.time()
-                for batch in iterate_data(train_dir, has_voxel=HAS_VOXEL, shuffle=True, aug=AUG_DATA, is_testset=False,
+                for batch in iterate_data(train_dir, db_sampler=sampler, shuffle=True, aug=AUG_DATA, is_testset=False,
                                           batch_size=args.single_batch_size * cfg.GPU_USE_COUNT, multi_gpu_sum=cfg.GPU_USE_COUNT):
                     counter += 1
                     global_counter += 1
@@ -159,7 +161,7 @@ def main(_):
                         log_print("summary_val_interval now")
                         # Random sample single batch data
                         batch = sample_test_data(val_dir, args.single_batch_size * cfg.GPU_USE_COUNT,
-                                                 has_voxel=HAS_VOXEL, multi_gpu_sum=cfg.GPU_USE_COUNT)
+                                                 multi_gpu_sum=cfg.GPU_USE_COUNT)
 
                         ret = model.validate_step(sess, batch, summary=True)
                         summary_writer.add_summary(ret[-1], global_counter)
@@ -192,7 +194,7 @@ def main(_):
                     if args.vis:
                         os.makedirs(os.path.join(args.output_path, str(epoch), 'vis'), exist_ok=True)
 
-                    for batch in iterate_data(val_dir, shuffle=False, aug=False, has_voxel=HAS_VOXEL, is_testset=False,
+                    for batch in iterate_data(val_dir, shuffle=False, aug=False, is_testset=False,
                                               batch_size=args.single_batch_size * cfg.GPU_USE_COUNT, multi_gpu_sum=cfg.GPU_USE_COUNT):
                         if args.vis:
                             tags, results, front_images, bird_views, heatmaps = model.predict_step(sess, batch, summary=False, vis=True)

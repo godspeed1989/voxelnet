@@ -19,16 +19,17 @@ CAM = 2
 def load_calib(calib_dir):
     # P2 * R0_rect * Tr_velo_to_cam * y
     lines = open(calib_dir).readlines()
-    lines = [ line.split()[1:] for line in lines ][:-1]
+    lines = [line.split()[1:] for line in lines][:-1]
     #
-    P = np.array(lines[CAM]).reshape(3,4)
-    P = np.concatenate( (  P, np.array( [[0,0,0,0]] )  ), 0  )
+    P = np.array(lines[CAM]).reshape(3, 4)
+    P = np.concatenate((P, np.array([[0, 0, 0, 0]])), 0)
     #
-    Tr_velo_to_cam = np.array(lines[5]).reshape(3,4)
-    Tr_velo_to_cam = np.concatenate(  [ Tr_velo_to_cam, np.array([0,0,0,1]).reshape(1,4)  ]  , 0     )
+    Tr_velo_to_cam = np.array(lines[5]).reshape(3, 4)
+    Tr_velo_to_cam = np.concatenate(
+        [Tr_velo_to_cam, np.array([0, 0, 0, 1]).reshape(1, 4)], 0)
     #
     R_cam_to_rect = np.eye(4)
-    R_cam_to_rect[:3,:3] = np.array(lines[4][:9]).reshape(3,3)
+    R_cam_to_rect[:3, :3] = np.array(lines[4][:9]).reshape(3, 3)
     #
     P = P.astype('float32')
     Tr_velo_to_cam = Tr_velo_to_cam.astype('float32')
@@ -43,6 +44,7 @@ def lidar_to_bird_view(x, y, factor=1):
     a = np.clip(a, a_max=(cfg.X_MAX - cfg.X_MIN) / cfg.VOXEL_X_SIZE * factor, a_min=0)
     b = np.clip(b, a_max=(cfg.Y_MAX - cfg.Y_MIN) / cfg.VOXEL_Y_SIZE * factor, a_min=0)
     return a, b
+
 
 def batch_lidar_to_bird_view(points, factor=1):
     # Input:
@@ -118,7 +120,6 @@ def lidar_to_camera_point(points, T_VELO_2_CAM=None, R_RECT_0=None):
     # (N, 3) -> (N, 3)
     N = points.shape[0]
     points = np.hstack([points, np.ones((N, 1))]).T
-
 
     if type(T_VELO_2_CAM) == type(None):
         T_VELO_2_CAM = np.array(cfg.MATRIX_T_VELO_2_CAM)
@@ -269,9 +270,9 @@ def corner_to_center_box3d(boxes_corner, coordinate='camera', T_VELO_2_CAM=None,
                 np.sqrt(np.sum((roi[4, [0, 2]] - roi[5, [0, 2]])**2)) +
                 np.sqrt(np.sum((roi[6, [0, 2]] - roi[7, [0, 2]])**2))
             ) / 4
-            x = np.sum(roi[:, 0], axis=0)/ 8
-            y = np.sum(roi[0:4, 1], axis=0)/ 4
-            z = np.sum(roi[:, 2], axis=0)/ 8
+            x = np.sum(roi[:, 0], axis=0) / 8
+            y = np.sum(roi[0:4, 1], axis=0) / 4
+            z = np.sum(roi[:, 2], axis=0) / 8
             ry = np.sum(
                 math.atan2(roi[2, 0] - roi[1, 0], roi[2, 2] - roi[1, 2]) +
                 math.atan2(roi[6, 0] - roi[5, 0], roi[6, 2] - roi[5, 2]) +
@@ -299,9 +300,9 @@ def corner_to_center_box3d(boxes_corner, coordinate='camera', T_VELO_2_CAM=None,
                 np.sqrt(np.sum((roi[4, [0, 2]] - roi[5, [0, 2]])**2)) +
                 np.sqrt(np.sum((roi[6, [0, 2]] - roi[7, [0, 2]])**2))
             )
-            x = np.sum(roi[:, 0], axis=0)/ 8
-            y = np.sum(roi[0:4, 1], axis=0)/ 4
-            z = np.sum(roi[:, 2], axis=0)/ 8
+            x = np.sum(roi[:, 0], axis=0) / 8
+            y = np.sum(roi[0:4, 1], axis=0) / 4
+            z = np.sum(roi[:, 2], axis=0) / 8
             ry = np.sum(
                 math.atan2(roi[2, 0] - roi[1, 0], roi[2, 2] - roi[1, 2]) +
                 math.atan2(roi[6, 0] - roi[5, 0], roi[6, 2] - roi[5, 2]) +
@@ -323,13 +324,14 @@ def corner_to_center_box3d(boxes_corner, coordinate='camera', T_VELO_2_CAM=None,
 
 
 # this just for visulize and testing
-def lidar_box3d_to_camera_box(boxes3d, cal_projection=False, P2 = None, T_VELO_2_CAM=None, R_RECT_0=None):
+def lidar_box3d_to_camera_box(boxes3d, cal_projection=False, P2=None, T_VELO_2_CAM=None, R_RECT_0=None):
     # (N, 7) -> (N, 4)/(N, 8, 2)  x,y,z,h,w,l,rz -> x1,y1,x2,y2/8*(x, y)
     num = len(boxes3d)
     boxes2d = np.zeros((num, 4), dtype=np.int32)
     projections = np.zeros((num, 8, 2), dtype=np.float32)
 
-    lidar_boxes3d_corner = center_to_corner_box3d(boxes3d, coordinate='lidar', T_VELO_2_CAM=T_VELO_2_CAM, R_RECT_0=R_RECT_0)
+    lidar_boxes3d_corner = center_to_corner_box3d(
+        boxes3d, coordinate='lidar', T_VELO_2_CAM=T_VELO_2_CAM, R_RECT_0=R_RECT_0)
     if type(P2) == type(None):
         P2 = np.array(cfg.MATRIX_P2)
 
@@ -376,15 +378,17 @@ def lidar_to_bird_view_img(lidar, factor=1):
 
 
 def draw_lidar_box3d_on_image(img, boxes3d, scores, gt_boxes3d=np.array([]),
-                              color=(0, 255, 255), gt_color=(255, 0, 255), thickness=1, P2 = None, T_VELO_2_CAM=None, R_RECT_0=None):
+                              color=(0, 255, 255), gt_color=(255, 0, 255), thickness=1, P2=None, T_VELO_2_CAM=None, R_RECT_0=None):
     # Input:
     #   img: (h, w, 3)
     #   boxes3d (N, 7) [x, y, z, h, w, l, r]
     #   scores
     #   gt_boxes3d (N, 7) [x, y, z, h, w, l, r]
     img = img.copy()
-    projections = lidar_box3d_to_camera_box(boxes3d, cal_projection=True, P2=P2, T_VELO_2_CAM=T_VELO_2_CAM, R_RECT_0=R_RECT_0)
-    gt_projections = lidar_box3d_to_camera_box(gt_boxes3d, cal_projection=True, P2=P2, T_VELO_2_CAM=T_VELO_2_CAM, R_RECT_0=R_RECT_0)
+    projections = lidar_box3d_to_camera_box(
+        boxes3d, cal_projection=True, P2=P2, T_VELO_2_CAM=T_VELO_2_CAM, R_RECT_0=R_RECT_0)
+    gt_projections = lidar_box3d_to_camera_box(
+        gt_boxes3d, cal_projection=True, P2=P2, T_VELO_2_CAM=T_VELO_2_CAM, R_RECT_0=R_RECT_0)
 
     # draw projections
     for qs in projections:
@@ -418,9 +422,8 @@ def draw_lidar_box3d_on_image(img, boxes3d, scores, gt_boxes3d=np.array([]),
     return cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_BGR2RGB)
 
 
-
 def draw_lidar_box3d_on_birdview(birdview, boxes3d, scores, gt_boxes3d=np.array([]),
-                                 color=(0, 255, 255), gt_color=(255, 0, 255), thickness=1, factor=1, P2 = None, T_VELO_2_CAM=None, R_RECT_0=None):
+                                 color=(0, 255, 255), gt_color=(255, 0, 255), thickness=1, factor=1, P2=None, T_VELO_2_CAM=None, R_RECT_0=None):
     # Input:
     #   birdview: (h, w, 3)
     #   boxes3d (N, 7) [x, y, z, h, w, l, r]
@@ -490,8 +493,9 @@ def label_to_gt_box3d(tags, labels, cls='Car', coordinate='camera'):
                 box3d = np.array([x, y, z, h, w, l, r])
                 boxes3d_a_label.append(box3d)
         if coordinate == 'lidar':
-            _, Tr, R = load_calib( os.path.join( cfg.CALIB_DIR, tag + '.txt' ) )
-            boxes3d_a_label = camera_to_lidar_box(np.array(boxes3d_a_label), T_VELO_2_CAM=Tr, R_RECT_0=R)
+            _, Tr, R = load_calib(os.path.join(cfg.CALIB_DIR, tag + '.txt'))
+            boxes3d_a_label = camera_to_lidar_box(
+                np.array(boxes3d_a_label), T_VELO_2_CAM=Tr, R_RECT_0=R)
 
         boxes3d.append(np.array(boxes3d_a_label).reshape(-1, 7))
     return boxes3d
@@ -552,8 +556,10 @@ def cal_anchors():
     #   anchors: (w, l, AT, AL) x y z h w l r
     #x = np.linspace(cfg.X_MIN, cfg.X_MAX, cfg.FEATURE_WIDTH)
     #y = np.linspace(cfg.Y_MIN, cfg.Y_MAX, cfg.FEATURE_HEIGHT)
-    x = (np.arange(cfg.FEATURE_WIDTH) + 0.5) * cfg.VOXEL_X_SIZE * cfg.FEATURE_RATIO + cfg.X_MIN
-    y = (np.arange(cfg.FEATURE_HEIGHT) + 0.5) * cfg.VOXEL_Y_SIZE * cfg.FEATURE_RATIO + cfg.Y_MIN
+    x = (np.arange(cfg.FEATURE_WIDTH) + 0.5) * \
+        cfg.VOXEL_X_SIZE * cfg.FEATURE_RATIO + cfg.X_MIN
+    y = (np.arange(cfg.FEATURE_HEIGHT) + 0.5) * \
+        cfg.VOXEL_Y_SIZE * cfg.FEATURE_RATIO + cfg.Y_MIN
     cx, cy = np.meshgrid(x, y)
     # all is (w, l, AT)
     cx = np.tile(cx[..., np.newaxis], cfg.ANCHOR_TYPES)
@@ -846,6 +852,7 @@ def cal_iou2d(box1, box2, T_VELO_2_CAM=None, R_RECT_0=None):
         return 0.0 # when target is out of bound
     return share / (indiv + share)
 
+
 def cal_z_intersect(cz1, h1, cz2, h2):
     b1z1, b1z2 = cz1 - h1 / 2, cz1 + h1 / 2
     b2z1, b2z2 = cz2 - h2 / 2, cz2 + h2 / 2
@@ -923,6 +930,7 @@ def cal_box2d_iou(boxes2d, gt_boxes2d, T_VELO_2_CAM=None, R_RECT_0=None):
 
     return output
 
+
 def rbbox_nms_3d_v1(dets, threshold):
     '''
     Parameters
@@ -964,6 +972,7 @@ def rbbox_nms_3d_v1(dets, threshold):
             if ovr > threshold:
                 suppressed[j] = 1
     return keep
+
 
 if __name__ == '__main__':
     pass

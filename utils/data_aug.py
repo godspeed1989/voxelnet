@@ -19,7 +19,7 @@ from config import cfg
 from utils.preprocess import process_pointcloud
 
 
-def aug_data(tag, object_dir, aug_pc=True, use_newtag=False):
+def aug_data(tag, object_dir, aug_pc=True, use_newtag=False, sampler=None):
     np.random.seed()
     rgb = cv2.imread(os.path.join(object_dir, 'image_2', tag + '.png'))
     assert rgb is not None, print('ERROR rgb {} {}'.format(object_dir, tag))
@@ -34,6 +34,20 @@ def aug_data(tag, object_dir, aug_pc=True, use_newtag=False):
     classes = np.array([line.split()[0] for line in label])  # (N')
     # (N', 7) x, y, z, h, w, l, r
     gt_box3d = label_to_gt_box3d([tag], np.array(label)[np.newaxis, :], cls='', coordinate='camera')[0]
+    if sampler is not None:
+        avoid_collision_boxes = gt_box3d.copy()
+        avoid_collision_boxes[:, 3] = gt_box3d[:, 5]
+        avoid_collision_boxes[:, 4] = gt_box3d[:, 4]
+        avoid_collision_boxes[:, 5] = gt_box3d[:, 3]
+        sampled_dict = sampler.sample_all('Car', avoid_collision_boxes)
+        if sampled_dict is not None:
+            sampled_box = sampled_dict["gt_boxes"].copy()
+            sampled_box[:, 3] = sampled_dict["gt_boxes"][:, 5]
+            sampled_box[:, 4] = sampled_dict["gt_boxes"][:, 4]
+            sampled_box[:, 5] = sampled_dict["gt_boxes"][:, 3]
+            gt_box3d = np.concatenate([gt_box3d, sampled_box], axis=0)
+            classes = np.concatenate([classes, sampled_dict["gt_names"]])
+            lidar = np.concatenate([lidar, sampled_dict["points"]], axis=0)
     P, Tr, R = load_calib( os.path.join( cfg.CALIB_DIR, tag + '.txt' ) )
     if aug_pc:
         choice = np.random.randint(0, 10)
