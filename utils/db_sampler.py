@@ -3,7 +3,10 @@ import pathlib
 import pickle
 import numpy as np
 import numba
-from utils.viewer import view_pc
+if __name__ == "__main__":
+    from viewer import view_pc
+else:
+    from utils.viewer import view_pc
 
 class BatchSampler:
     def __init__(self, sampled_list, name=None, epoch=None, shuffle=True, drop_reminder=False):
@@ -367,6 +370,53 @@ def center_to_corner_box2d(centers, dims, angles=None, origin=0.5):
     corners += centers.reshape([-1, 1, 2])
     return corners
 
+def rotation_3d_in_axis(points, angles, axis=0):
+    # points: [N, point_size, 3]
+    rot_sin = np.sin(angles)
+    rot_cos = np.cos(angles)
+    ones = np.ones_like(rot_cos)
+    zeros = np.zeros_like(rot_cos)
+    if axis == 1:
+        rot_mat_T = np.stack([[rot_cos, zeros, -rot_sin], [zeros, ones, zeros],
+                              [rot_sin, zeros, rot_cos]])
+    elif axis == 2 or axis == -1:
+        rot_mat_T = np.stack([[rot_cos, -rot_sin, zeros],
+                              [rot_sin, rot_cos, zeros], [zeros, zeros, ones]])
+    elif axis == 0:
+        rot_mat_T = np.stack([[zeros, rot_cos, -rot_sin],
+                              [zeros, rot_sin, rot_cos], [ones, zeros, zeros]])
+    else:
+        raise ValueError("axis should in range")
+
+    return np.einsum('aij,jka->aik', points, rot_mat_T)
+
+def center_to_corner_box3d(centers,
+                           dims,
+                           angles=None,
+                           origin=[0.5, 1.0, 0.5],
+                           axis=1):
+    """convert kitti locations, dimensions and angles to corners
+    
+    Args:
+        centers (float array, shape=[N, 3]): locations in kitti label file.
+        dims (float array, shape=[N, 3]): dimensions in kitti label file.
+        angles (float array, shape=[N]): rotation_y in kitti label file.
+        origin (list or array or float): origin point relate to smallest point.
+            use [0.5, 1.0, 0.5] in camera and [0.5, 0.5, 0] in lidar.
+        axis (int): rotation axis. 1 for camera and 2 for lidar.
+    Returns:
+        [type]: [description]
+    """
+    # 'length' in kitti format is in x axis.
+    # yzx(hwl)(kitti label file)<->xyz(lhw)(camera)<->z(-x)(-y)(wlh)(lidar)
+    # center in kitti format is [0.5, 1.0, 0.5] in xyz.
+    corners = corners_nd(dims, origin=origin)
+    # corners: [N, 8, 3]
+    if angles is not None:
+        corners = rotation_3d_in_axis(corners, angles, axis=axis)
+    corners += centers.reshape([-1, 1, 3])
+    return corners
+
 class DataBaseSampler:
     def __init__(self, root_path, info_path, num_point_features=4, global_rot_range=None):
         self.root_path = root_path
@@ -387,9 +437,14 @@ class DataBaseSampler:
         print(self._sampler_dict.keys())
 
     def sample_n_obj(self, class_name, sampled_num):
-        all_samples = self._sampler_dict[class_name].sample(sampled_num)
-        all_samples = copy.deepcopy(all_samples)
-        return all_samples
+        samples = []
+        while len(samples) < sampled_num:
+            all_samples = self._sampler_dict[class_name].sample(sampled_num)
+            for s in all_samples:
+                if s['difficulty'] <= 1 and s['num_points_in_gt'] > 50:
+                    samples.append(s)
+        samples = copy.deepcopy(samples)
+        return samples
 
     def load_sample_points(self, all_samples):
         s_points_list = []
@@ -486,7 +541,7 @@ class DataBaseSampler:
 
 
 if __name__ == '__main__':
-    sampler = DataBaseSampler(root_path, database_info_path, global_rot_range=[0.5,0.5])
+    sampler = DataBaseSampler(root_path, database_info_path, global_rot_range=None)
     sampler.print_class_name()
     # test1
     samples = sampler.sample_n_obj('Car', 5)
@@ -496,5 +551,8 @@ if __name__ == '__main__':
     gt_boxes = np.array([[10,10,10,1,1,1,0]])
     sampled = sampler.sample_all('Car', gt_boxes)
     if sampled is not None:
-        print(sampled["gt_boxes"][:, :3], sampled["points"].shape, sampled["gt_names"])
-    view_pc(sampled['points'])
+        print(sampled["points"].shape, sampled["gt_names"], sep='\n')
+    corners_box3d = center_to_corner_box3d(
+        sampled["gt_boxes"][:, :3], sampled["gt_boxes"][:, 3:6], sampled["gt_boxes"][:, 6], [0.5,0.5,0], axis=2)
+    print(corners_box3d.shape)
+    view_pc(sampled['points'], corners_box3d)

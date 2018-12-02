@@ -216,7 +216,7 @@ class RPN3D(object):
 
         print('train', tag)
         pos_equal_one, neg_equal_one, targets = cal_rpn_target(
-            tag, label, self.rpn_output_shape, self.anchors, cls=cfg.DETECT_OBJ, coordinate='lidar')
+            tag, label, self.rpn_output_shape, self.anchors, cls=cfg.DETECT_OBJ)
         # (N, H, W, AT) -> (N, H, W, AT * AL)
         pos_equal_one_list = []
         for i in range(cfg.ANCHOR_TYPES):
@@ -267,7 +267,7 @@ class RPN3D(object):
 
         print('valid', tag)
         pos_equal_one, neg_equal_one, targets = cal_rpn_target(
-            tag, label, self.rpn_output_shape, self.anchors, cls=cfg.DETECT_OBJ, coordinate='lidar')
+            tag, label, self.rpn_output_shape, self.anchors, cls=cfg.DETECT_OBJ)
         # (N, H, W, AT) -> (N, H, W, AT * AL)
         pos_equal_one_list = []
         for i in range(cfg.ANCHOR_TYPES):

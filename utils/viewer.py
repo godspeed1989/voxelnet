@@ -44,7 +44,8 @@ class plot3d(object):
             self.glview.removeItem(it)
         self.items.clear()
     def add_points(self, points, colors):
-        points_item = gl.GLScatterPlotItem(pos=points, size=0.5, color=colors)
+        points_item = gl.GLScatterPlotItem(
+            pos=points, size=np.full((points.shape[0],), 2), color=colors)
         self.add_item(points_item)
     def add_line(self, p1, p2, color, width=3):
         lines = np.array([[p1[0], p1[1], p1[2]],
@@ -71,7 +72,7 @@ def value_to_rgb(pc_inte):
     g = 1 - b - r
     return np.stack([r, g, b, np.ones_like(r)]).transpose()
 
-def view_pc(pc=None):
+def view_pc(pc=None, boxes3d=None):
     app = QtGui.QApplication([])
     glview = plot3d()
     if pc is None:
@@ -84,6 +85,9 @@ def view_pc(pc=None):
         elif pc.shape[1] == 4:
             points = pc[:,:3]
             pc_color = value_to_rgb(pc[:,3])
+    if boxes3d is not None:
+        for box3d in boxes3d:
+            glview.plot_bbox_mesh(box3d)
     glview.add_points(points, pc_color)
     glview.view.show()
     return app.exec()

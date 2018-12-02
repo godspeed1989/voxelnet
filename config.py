@@ -11,8 +11,6 @@ from easydict import EasyDict as edict
 import math
 
 __C = edict()
-# Consumers can get config by:
-#    import config as cfg
 cfg = __C
 
 # for dataset dir

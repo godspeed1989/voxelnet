@@ -138,8 +138,7 @@ def camera_to_lidar_box(boxes, T_VELO_2_CAM=None, R_RECT_0=None):
     ret = []
     for box in boxes:
         x, y, z, h, w, l, ry = box
-        (x, y, z), h, w, l, rz = camera_to_lidar(
-            x, y, z, T_VELO_2_CAM, R_RECT_0), h, w, l, -ry - np.pi / 2
+        (x, y, z), h, w, l, rz = camera_to_lidar(x, y, z, T_VELO_2_CAM, R_RECT_0), h, w, l, -ry - np.pi / 2
         rz = angle_in_limit(rz)
         ret.append([x, y, z, h, w, l, rz])
     return np.array(ret).reshape(-1, 7)
@@ -170,6 +169,7 @@ def center_to_corner_box2d(boxes_center, coordinate='lidar', T_VELO_2_CAM=None, 
 
 def center_to_corner_box3d(boxes_center, coordinate='lidar', T_VELO_2_CAM=None, R_RECT_0=None):
     # (N, 7) -> (N, 8, 3)
+    # coordinate(input): camera or lidar
     N = boxes_center.shape[0]
     ret = np.zeros((N, 8, 3), dtype=np.float32)
 
@@ -323,7 +323,6 @@ def corner_to_center_box3d(boxes_corner, coordinate='camera', T_VELO_2_CAM=None,
     return np.array(ret)
 
 
-# this just for visulize and testing
 def lidar_box3d_to_camera_box(boxes3d, cal_projection=False, P2=None, T_VELO_2_CAM=None, R_RECT_0=None):
     # (N, 7) -> (N, 4)/(N, 8, 2)  x,y,z,h,w,l,rz -> x1,y1,x2,y2/8*(x, y)
     num = len(boxes3d)
@@ -471,7 +470,7 @@ def label_to_gt_box3d(tags, labels, cls='Car', coordinate='camera'):
     # Input:
     #   label: (N, N')
     #   cls: 'Car' or 'Pedestrain' or 'Cyclist'
-    #   coordinate: 'camera' or 'lidar'
+    #   coordinate(output): 'camera' or 'lidar'
     # Output:
     #   (N, N', 7)
     boxes3d = []
@@ -501,7 +500,8 @@ def label_to_gt_box3d(tags, labels, cls='Car', coordinate='camera'):
     return boxes3d
 
 
-def box3d_to_label(batch_box3d, batch_cls, batch_score=[], coordinate='camera', P2=None, T_VELO_2_CAM=None, R_RECT_0=None):
+def box3d_to_label(batch_box3d, batch_cls, batch_score=[],
+                   coordinate='camera', P2=None, T_VELO_2_CAM=None, R_RECT_0=None):
     # Input:
     #   (N, N', 7) x y z h w l r
     #   (N, N')
@@ -518,7 +518,8 @@ def box3d_to_label(batch_box3d, batch_cls, batch_score=[], coordinate='camera', 
                 if coordinate == 'camera':
                     box3d = box
                     box2d = lidar_box3d_to_camera_box(
-                        camera_to_lidar_box(box[np.newaxis, :].astype(np.float32), T_VELO_2_CAM, R_RECT_0), cal_projection=False, P2=P2, T_VELO_2_CAM=T_VELO_2_CAM, R_RECT_0=R_RECT_0)[0]
+                        camera_to_lidar_box(box[np.newaxis, :].astype(np.float32), T_VELO_2_CAM, R_RECT_0), 
+                        cal_projection=False, P2=P2, T_VELO_2_CAM=T_VELO_2_CAM, R_RECT_0=R_RECT_0)[0]
                 else:
                     box3d = lidar_to_camera_box(
                         box[np.newaxis, :].astype(np.float32), T_VELO_2_CAM, R_RECT_0)[0]
@@ -537,7 +538,8 @@ def box3d_to_label(batch_box3d, batch_cls, batch_score=[], coordinate='camera', 
                 if coordinate == 'camera':
                     box3d = box
                     box2d = lidar_box3d_to_camera_box(
-                        camera_to_lidar_box(box[np.newaxis, :].astype(np.float32), T_VELO_2_CAM, R_RECT_0), cal_projection=False,  P2=P2, T_VELO_2_CAM=T_VELO_2_CAM, R_RECT_0=R_RECT_0)[0]
+                        camera_to_lidar_box(box[np.newaxis, :].astype(np.float32), T_VELO_2_CAM, R_RECT_0),
+                        cal_projection=False,  P2=P2, T_VELO_2_CAM=T_VELO_2_CAM, R_RECT_0=R_RECT_0)[0]
                 else:
                     box3d = lidar_to_camera_box(
                         box[np.newaxis, :].astype(np.float32), T_VELO_2_CAM, R_RECT_0)[0]
@@ -612,7 +614,7 @@ def cal_anchors():
     return anchors
 
 
-def cal_rpn_target(tags, labels, feature_map_shape, anchors, cls='Car', coordinate='lidar'):
+def cal_rpn_target(tags, labels, feature_map_shape, anchors, cls='Car'):
     # Input:
     #   labels: (N, N')
     #   feature_map_shape: (w, l)
@@ -623,7 +625,7 @@ def cal_rpn_target(tags, labels, feature_map_shape, anchors, cls='Car', coordina
     #   targets (N, w, l, AT * AL)
     # attention: cal IoU on birdview
     batch_size = labels.shape[0]
-    batch_gt_boxes3d = label_to_gt_box3d(tags, labels, cls=cls, coordinate=coordinate)
+    batch_gt_boxes3d = label_to_gt_box3d(tags, labels, cls=cls, coordinate='lidar')
     # defined in eq(1) in 2.2
     anchors = anchors.copy()
     anchors_reshaped = anchors.reshape(-1, cfg.ANCHOR_LEN)
@@ -652,7 +654,7 @@ def cal_rpn_target(tags, labels, feature_map_shape, anchors, cls='Car', coordina
                 anchors_for_iou[:, [0, 1, 4, 5]])
             # BOTTLENECK
             gt_standup_2d = corner_to_standup_box2d(center_to_corner_box2d(
-                batch_gt_boxes3d[batch_id][:, [0, 1, 4, 5, 6]], coordinate=coordinate))
+                batch_gt_boxes3d[batch_id][:, [0, 1, 4, 5, 6]], coordinate='lidar'))
 
             iou = bbox_overlaps(
                 np.ascontiguousarray(anchors_standup_2d).astype(np.float32),
